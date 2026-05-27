@@ -1,0 +1,17 @@
+{
+  "generated_at": "2026-05-27T20:49:39.355184Z",
+  "feeds": {
+    "feodo": {
+      "last_run": "2026-05-27T20:49:39.355184Z",
+      "status": "ok",
+      "count": 5,
+      "error": null
+    },
+    "dshield": {
+      "last_run": "2026-05-27T20:49:39.355184Z",
+      "status": "ok",
+      "count": 30,
+      "error": null
+    }
+  }
+}

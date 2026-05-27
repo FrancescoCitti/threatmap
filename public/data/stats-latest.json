@@ -1,0 +1,49 @@
+{
+  "generated_at": "2026-05-27T20:49:39.355184Z",
+  "window_hours": 24,
+  "total_events": 35,
+  "active_c2_count": 5,
+  "top_source_countries": [
+    {
+      "code": "US",
+      "name": "United States",
+      "count": 27
+    },
+    {
+      "code": "NL",
+      "name": "Netherlands",
+      "count": 4
+    },
+    {
+      "code": "GB",
+      "name": "United Kingdom",
+      "count": 1
+    },
+    {
+      "code": "JP",
+      "name": "Japan",
+      "count": 1
+    },
+    {
+      "code": "BG",
+      "name": "Bulgaria",
+      "count": 1
+    },
+    {
+      "code": "RU",
+      "name": "Russia",
+      "count": 1
+    }
+  ],
+  "top_malware_families": [
+    {
+      "name": "QakBot",
+      "count": 4
+    },
+    {
+      "name": "Emotet",
+      "count": 1
+    }
+  ],
+  "events_by_hour": []
+}
