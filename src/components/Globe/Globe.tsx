@@ -2,6 +2,9 @@ import { useRef, useEffect, useState, useCallback } from 'react'
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore — react-globe.gl ships CJS types that don't align with Vite ESM
 import GlobeGL from 'react-globe.gl'
+import * as THREE from 'three'
+import { feature } from 'topojson-client'
+import type { Topology } from 'topojson-specification'
 import { useThreatStore } from '../../stores/threatStore'
 import type { ThreatEvent } from '../../types/schema'
 
@@ -34,12 +37,28 @@ interface GlobePoint {
   event: ThreatEvent
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type GeoFeature = any
+
 export function ThreatGlobe() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const globeRef = useRef<any>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [dims, setDims] = useState({ width: 0, height: 0 })
+  const [countries, setCountries] = useState<GeoFeature[]>([])
   const { events, setSelected } = useThreatStore()
+
+  // Load vector country polygons
+  useEffect(() => {
+    fetch(`${import.meta.env.BASE_URL}data/countries-110m.json`)
+      .then((r) => r.json())
+      .then((topo: Topology) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const fc = feature(topo, (topo.objects as any).countries) as any
+        setCountries(fc.features)
+      })
+      .catch(() => {/* silently fall back to no polygons */})
+  }, [])
 
   // Track container size
   useEffect(() => {
@@ -53,15 +72,80 @@ export function ThreatGlobe() {
     return () => ro.disconnect()
   }, [])
 
-  // Auto-rotate after mount
+  // Configure renderer, controls, and procedural star field after mount
   useEffect(() => {
     const g = globeRef.current
-    if (!g) return
+    if (!g || dims.width === 0) return
+
+    // Fix DPR for retina/HiDPI displays
+    const renderer = g.renderer()
+    renderer.setPixelRatio(window.devicePixelRatio)
+
+    // Max anisotropy on all textures for crisp quality at oblique angles
+    const maxAniso = renderer.capabilities.getMaxAnisotropy()
+    const scene = g.scene()
+    scene.traverse((obj: any) => {
+      if (obj.isMesh && obj.material) {
+        const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
+        mats.forEach((mat: any) => {
+          ['map', 'bumpMap', 'specularMap', 'normalMap'].forEach((key) => {
+            if (mat[key]) {
+              mat[key].anisotropy = maxAniso
+              mat[key].needsUpdate = true
+            }
+          })
+        })
+      }
+    })
+
+    // Procedural star field — point-based so it stays perfectly crisp at any zoom
+    if (!scene.getObjectByName('starfield')) {
+      const COUNT = 8000
+      const R = 900
+      const positions = new Float32Array(COUNT * 3)
+      const colors = new Float32Array(COUNT * 3)
+      // Tint palette: mostly white, occasional blue-white or warm-white
+      const tints = [
+        [1.0, 1.0, 1.0],
+        [0.85, 0.92, 1.0],  // cool blue-white
+        [1.0, 0.95, 0.85],  // warm white
+        [0.75, 0.85, 1.0],  // blue giant
+      ]
+      for (let i = 0; i < COUNT; i++) {
+        const theta = Math.random() * Math.PI * 2
+        const phi = Math.acos(2 * Math.random() - 1)
+        positions[i * 3]     = R * Math.sin(phi) * Math.cos(theta)
+        positions[i * 3 + 1] = R * Math.sin(phi) * Math.sin(theta)
+        positions[i * 3 + 2] = R * Math.cos(phi)
+        const [r, gv, b] = tints[Math.floor(Math.random() * tints.length)]
+        const brightness = 0.4 + Math.random() * 0.6
+        colors[i * 3]     = r * brightness
+        colors[i * 3 + 1] = gv * brightness
+        colors[i * 3 + 2] = b * brightness
+      }
+      const geo = new THREE.BufferGeometry()
+      geo.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+      geo.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+      const mat = new THREE.PointsMaterial({
+        size: 0.6,
+        sizeAttenuation: false,   // consistent pixel size regardless of zoom
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.9,
+      })
+      const stars = new THREE.Points(geo, mat)
+      stars.name = 'starfield'
+      scene.add(stars)
+    }
+
     g.controls().autoRotate = true
     g.controls().autoRotateSpeed = 0.25
     g.controls().enableDamping = true
+    g.controls().dampingFactor = 0.08
+    g.controls().minDistance = 101
+    g.controls().maxDistance = 800
     g.pointOfView({ lat: 30, lng: 15, altitude: 2.2 }, 0)
-  }, [dims.width]) // re-apply once globe has rendered
+  }, [dims.width])
 
   const points: GlobePoint[] = events.map((e) => ({
     lat: e.source.lat,
@@ -108,11 +192,20 @@ export function ThreatGlobe() {
           ref={globeRef}
           width={dims.width}
           height={dims.height}
+
           globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
           bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
-          backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
           atmosphereColor="rgba(56,189,248,0.35)"
           atmosphereAltitude={0.13}
+
+          // Vector country polygons — crisp at any zoom level
+          polygonsData={countries}
+          polygonCapColor={() => 'rgba(14, 30, 50, 0.55)'}
+          polygonSideColor={() => 'rgba(0,0,0,0)'}
+          polygonStrokeColor={() => 'rgba(56,189,248,0.25)'}
+          polygonAltitude={0.003}
+
+          // Threat points
           pointsData={points}
           pointLat="lat"
           pointLng="lng"
