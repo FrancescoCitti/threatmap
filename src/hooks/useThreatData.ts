@@ -15,10 +15,11 @@ export function useThreatData() {
     async function load() {
       setLoading(true)
       try {
+        const base = import.meta.env.BASE_URL
         const [dataRes, statsRes, healthRes] = await Promise.allSettled([
-          fetch('/data/threats-24h.json'),
-          fetch('/data/stats-latest.json'),
-          fetch('/data/pipeline-health.json'),
+          fetch(`${base}data/threats-24h.json`),
+          fetch(`${base}data/stats-latest.json`),
+          fetch(`${base}data/pipeline-health.json`),
         ])
 
         const parse = async <T>(
