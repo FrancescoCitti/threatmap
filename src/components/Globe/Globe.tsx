@@ -392,7 +392,7 @@ export function ThreatGlobe() {
           arcStroke={0.18}
           arcDashLength={0.2}
           arcDashGap={0.8}
-          arcDashAnimateTime={6000}
+          arcDashAnimateTime={3500}
           arcAltitudeAutoScale={0.22}
 
           ringsData={clusters}
