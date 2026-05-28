@@ -73,7 +73,17 @@ function EventDetail({ event: e }: { event: ThreatEvent }) {
         <DetailRow label="FEED" value={e.feed.toUpperCase()} />
         <DetailRow label="TYPE" value={e.type.toUpperCase()} />
         {e.malware_family && (
-          <DetailRow label="MALWARE" value={e.malware_family} accent />
+          <div className="flex gap-2 items-start">
+            <span className="text-slate-600 w-16 shrink-0 text-[10px] pt-px">MALWARE</span>
+            <a
+              href={`https://malpedia.caad.fkie.fraunhofer.de/find?term=${encodeURIComponent(e.malware_family)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-orange-400 hover:text-orange-300 underline underline-offset-2 decoration-orange-800 hover:decoration-orange-400 transition-colors break-all"
+            >
+              {e.malware_family}
+            </a>
+          </div>
         )}
         {e.malware_family && (() => {
           const actors = getActorsForMalware(e.malware_family)
@@ -83,9 +93,16 @@ function EventDetail({ event: e }: { event: ThreatEvent }) {
               <span className="text-slate-600 w-16 shrink-0 text-[10px] pt-0.5">ACTOR</span>
               <div className="flex flex-col gap-0.5">
                 {actors.map(a => (
-                  <div key={a.id}>
-                    <span className="text-purple-400 text-[10px] font-semibold font-mono">{a.name}</span>
-                    <span className="text-slate-600 text-[9px] ml-1.5 font-mono">{a.suspectedOrigin}</span>
+                  <div key={a.id} className="flex items-center gap-1.5">
+                    <a
+                      href={`https://malpedia.caad.fkie.fraunhofer.de/actor/${a.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-purple-400 hover:text-purple-300 text-[10px] font-semibold font-mono underline underline-offset-2 decoration-purple-900 hover:decoration-purple-500 transition-colors"
+                    >
+                      {a.name}
+                    </a>
+                    <span className="text-slate-600 text-[9px] font-mono">{a.suspectedOrigin}</span>
                   </div>
                 ))}
               </div>

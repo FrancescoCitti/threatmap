@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useThreatStore } from '../../stores/threatStore'
 
 // ── GitHub Actions trigger ────────────────────────────────────────────────────
@@ -67,8 +68,8 @@ function UpdateButton() {
 
   return (
     <>
-      {showModal && (
-        <div className="fixed inset-0 z-50 pointer-events-none flex items-end justify-end p-4 pb-10">
+      {showModal && createPortal(
+        <div className="fixed inset-0 z-[200] pointer-events-none flex items-end justify-end p-4 pb-12">
           <div className="pointer-events-auto bg-black/95 border border-sky-900/50 rounded-sm p-3 w-64 font-mono shadow-xl">
             <div className="text-[9px] text-sky-400 font-bold tracking-widest mb-1.5">
               GITHUB ACCESS TOKEN
@@ -107,7 +108,8 @@ function UpdateButton() {
               clear stored token
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       <button

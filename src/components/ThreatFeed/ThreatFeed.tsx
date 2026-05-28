@@ -137,7 +137,9 @@ function FeedTab() {
   )
 
   const recent = useMemo(
-    () => [...filteredEvents].sort((a, b) => b.ts.localeCompare(a.ts)),
+    () => [...filteredEvents].sort((a, b) =>
+      b.severity !== a.severity ? b.severity - a.severity : b.ts.localeCompare(a.ts)
+    ),
     [filteredEvents]
   )
 
@@ -419,9 +421,14 @@ function IntelTab() {
               <div key={actor.id} className="border border-white/[0.07] rounded-sm p-2.5 bg-black/20">
                 <div className="flex items-start justify-between gap-2 mb-1.5">
                   <div>
-                    <div className="text-[11px] font-bold text-slate-100 font-mono leading-tight">
+                    <a
+                      href={`https://malpedia.caad.fkie.fraunhofer.de/actor/${actor.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] font-bold text-slate-100 hover:text-purple-300 font-mono leading-tight underline underline-offset-2 decoration-slate-700 hover:decoration-purple-500 transition-colors"
+                    >
                       {actor.name}
-                    </div>
+                    </a>
                     {actor.aliases.length > 0 && (
                       <div className="text-[8px] text-slate-700 font-mono mt-0.5 leading-relaxed">
                         {actor.aliases.slice(0, 3).join(' · ')}
@@ -437,16 +444,19 @@ function IntelTab() {
                 </div>
                 <div className="flex flex-wrap gap-1 mb-2">
                   {actor.malware.map(m => (
-                    <span
+                    <a
                       key={m}
-                      className={`px-1 py-px text-[8px] font-mono rounded border ${
+                      href={`https://malpedia.caad.fkie.fraunhofer.de/find?term=${encodeURIComponent(m)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`px-1 py-px text-[8px] font-mono rounded border transition-colors ${
                         activeFamilies.has(m)
-                          ? 'bg-orange-950/60 border-orange-700/50 text-orange-400'
-                          : 'bg-slate-900/60 border-slate-800 text-slate-600'
+                          ? 'bg-orange-950/60 border-orange-700/50 text-orange-400 hover:text-orange-300'
+                          : 'bg-slate-900/60 border-slate-800 text-slate-600 hover:text-slate-400'
                       }`}
                     >
                       {m}
-                    </span>
+                    </a>
                   ))}
                 </div>
                 <p className="text-[9px] text-slate-600 leading-relaxed">{actor.description}</p>
