@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { ThreatGlobe } from './components/Globe/Globe'
 import { ThreatFeed } from './components/ThreatFeed/ThreatFeed'
 import { StatusBar } from './components/StatusBar/StatusBar'
@@ -39,6 +40,7 @@ function DetailRow({
 
 function EventDetail({ event: e }: { event: ThreatEvent }) {
   const setSelected = useThreatStore((s) => s.setSelected)
+  const [cveExpanded, setCveExpanded] = useState(false)
 
   return (
     <div className="absolute bottom-10 left-4 w-72 max-h-[80vh] flex flex-col bg-black/85 backdrop-blur-sm border border-sky-900/50 rounded-sm font-mono">
@@ -108,7 +110,7 @@ function EventDetail({ event: e }: { event: ThreatEvent }) {
                 <div className="flex gap-2 items-start">
                   <span className="text-slate-600 w-16 shrink-0 text-[10px] pt-0.5">CVEs</span>
                   <div className="flex flex-col gap-0.5">
-                    {e.source.vulns!.slice(0, 5).map((cve) => (
+                    {(cveExpanded ? e.source.vulns! : e.source.vulns!.slice(0, 5)).map((cve) => (
                       <a
                         key={cve}
                         href={`https://nvd.nist.gov/vuln/detail/${cve}`}
@@ -120,9 +122,14 @@ function EventDetail({ event: e }: { event: ThreatEvent }) {
                       </a>
                     ))}
                     {e.source.vulns!.length > 5 && (
-                      <span className="text-[9px] text-slate-600 italic">
-                        +{e.source.vulns!.length - 5} more CVEs
-                      </span>
+                      <button
+                        onClick={() => setCveExpanded((v) => !v)}
+                        className="text-[9px] text-sky-600 hover:text-sky-400 transition-colors text-left mt-0.5"
+                      >
+                        {cveExpanded
+                          ? '▲ show less'
+                          : `▼ +${e.source.vulns!.length - 5} more CVEs`}
+                      </button>
                     )}
                   </div>
                 </div>
@@ -202,7 +209,7 @@ export default function App() {
       </div>
 
       {/* Click-to-inspect panel */}
-      {selectedEvent && <EventDetail event={selectedEvent} />}
+      {selectedEvent && <EventDetail key={selectedEvent.id} event={selectedEvent} />}
 
       {/* Bottom status bar */}
       <div className="absolute bottom-0 left-0 right-0 h-8 bg-black/80 backdrop-blur-sm border-t border-white/[0.07] z-10">
