@@ -195,11 +195,13 @@ export default function App() {
 
       {/* Top-left branding */}
       <div className="absolute top-4 left-4 pointer-events-none select-none z-10">
-        <div className="text-sky-400 font-mono font-bold text-xl tracking-[0.2em]">
-          THREATMAP
+        <div className="font-mono leading-tight">
+          <span className="text-sky-400 font-bold text-xl tracking-[0.12em]">threatmap</span>
+          <span className="text-slate-600 text-base mx-1.5">:</span>
+          <span className="text-slate-400 text-sm tracking-wide">Francesco's little globe</span>
         </div>
-        <div className="text-slate-600 font-mono text-[9px] tracking-[0.15em] mt-0.5">
-          GLOBAL CYBER INTELLIGENCE · LIVE · OSINT
+        <div className="text-slate-600 font-mono text-[9px] tracking-[0.15em] mt-1">
+          LIVE · OSINT · GLOBAL CYBER INTELLIGENCE
         </div>
       </div>
 

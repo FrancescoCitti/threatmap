@@ -97,6 +97,23 @@ type GeoFeature = any
 
 type ViewMode = 'events' | 'arcs' | 'heat'
 
+// ── Procedural globe texture (dark navy, fully vector-friendly) ───────────────
+
+function makeDarkGlobeTexture(): string {
+  const canvas = document.createElement('canvas')
+  canvas.width = 512
+  canvas.height = 256
+  const ctx = canvas.getContext('2d')!
+  // Subtle pole-to-equator gradient for a faint sense of depth
+  const g = ctx.createLinearGradient(0, 0, 0, 256)
+  g.addColorStop(0,   '#040c17')
+  g.addColorStop(0.5, '#070f1e')
+  g.addColorStop(1,   '#040c17')
+  ctx.fillStyle = g
+  ctx.fillRect(0, 0, 512, 256)
+  return canvas.toDataURL('image/jpeg', 0.9)
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function ThreatGlobe() {
@@ -106,7 +123,8 @@ export function ThreatGlobe() {
   const [dims, setDims] = useState({ width: 0, height: 0 })
   const [countries, setCountries] = useState<GeoFeature[]>([])
   const [viewMode, setViewMode] = useState<ViewMode>('events')
-  const { events, setSelected } = useThreatStore()
+  const { events, selectedEvent, setSelected } = useThreatStore()
+  const darkGlobeTexture = useMemo(() => makeDarkGlobeTexture(), [])
 
   // Load vector country polygons
   useEffect(() => {
@@ -199,24 +217,32 @@ export function ThreatGlobe() {
     [events]
   )
 
-  // Top 150 events by severity → arcs toward internet hubs
+  // Top 80 events by severity → arcs toward internet hubs
   const arcs: ArcPoint[] = useMemo(() => {
     return [...events]
       .filter((e) => e.source.lat !== 0 || e.source.lon !== 0)
       .sort((a, b) => b.severity - a.severity)
-      .slice(0, 150)
+      .slice(0, 80)
       .map((e) => {
         const hub = pickHub(e.source.lat, e.source.lon, e.source.ip)
         const c = getSevColor(e.severity)
         return {
           startLat: e.source.lat, startLng: e.source.lon,
           endLat: hub.lat, endLng: hub.lng,
-          color: [c, '#ffffff'] as [string, string],
+          color: [c, 'rgba(255,255,255,0.6)'] as [string, string],
           dashTime: e.severity >= 3 ? 1200 : 2400,
           event: e,
         }
       })
   }, [events])
+
+  // Filter arcs to selected event's source when something is clicked
+  const visibleArcs = useMemo(() => {
+    if (!selectedEvent) return arcs
+    return arcs.filter(
+      (a) => a.startLat === selectedEvent.source.lat && a.startLng === selectedEvent.source.lon
+    )
+  }, [arcs, selectedEvent])
 
   // Events per country for heatmap
   const countryCounts = useMemo(() => {
@@ -239,7 +265,7 @@ export function ThreatGlobe() {
     (feat: GeoFeature) => {
       const alpha2 = ISO_NUM_TO_A2[feat.id as number]
       const count = alpha2 ? (countryCounts.get(alpha2) ?? 0) : 0
-      if (viewMode !== 'heat' || count === 0) return 'rgba(14,30,50,0.55)'
+      if (viewMode !== 'heat' || count === 0) return 'rgba(10,24,44,0.82)'
       const t = Math.min(count / maxCount, 1)
       const r = Math.round(20 + t * 210)
       const gv = Math.round(40 - t * 15)
@@ -293,15 +319,14 @@ export function ThreatGlobe() {
           width={dims.width}
           height={dims.height}
 
-          globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
-          bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
-          atmosphereColor="rgba(56,189,248,0.35)"
-          atmosphereAltitude={0.13}
+          globeImageUrl={darkGlobeTexture}
+          atmosphereColor="rgba(56,189,248,0.4)"
+          atmosphereAltitude={0.15}
 
           polygonsData={countries}
           polygonCapColor={polygonCapColor}
           polygonSideColor={() => 'rgba(0,0,0,0)'}
-          polygonStrokeColor={() => 'rgba(56,189,248,0.25)'}
+          polygonStrokeColor={() => 'rgba(56,189,248,0.4)'}
           polygonAltitude={polygonAltitude}
 
           pointsData={points}
@@ -314,17 +339,17 @@ export function ThreatGlobe() {
           pointsTransitionDuration={800}
           onPointClick={handleClick}
 
-          arcsData={viewMode === 'arcs' ? arcs : []}
+          arcsData={viewMode === 'arcs' ? visibleArcs : []}
           arcStartLat="startLat"
           arcStartLng="startLng"
           arcEndLat="endLat"
           arcEndLng="endLng"
           arcColor="color"
-          arcStroke={0.4}
-          arcDashLength={0.12}
-          arcDashGap={0.06}
+          arcStroke={0.15}
+          arcDashLength={0.06}
+          arcDashGap={0.03}
           arcDashAnimateTime="dashTime"
-          arcAltitudeAutoScale={0.4}
+          arcAltitudeAutoScale={0.22}
         />
       )}
 
