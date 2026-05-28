@@ -123,8 +123,14 @@ export function ThreatGlobe() {
   const [dims, setDims] = useState({ width: 0, height: 0 })
   const [countries, setCountries] = useState<GeoFeature[]>([])
   const [viewMode, setViewMode] = useState<ViewMode>('events')
+  const [arcFocusEvent, setArcFocusEvent] = useState<ThreatEvent | null>(null)
   const { events, selectedEvent, setSelected } = useThreatStore()
   const darkGlobeTexture = useMemo(() => makeDarkGlobeTexture(), [])
+
+  // Clear arc focus when leaving arc mode or when the detail panel is closed
+  useEffect(() => {
+    if (viewMode !== 'arcs' || !selectedEvent) setArcFocusEvent(null)
+  }, [viewMode, selectedEvent])
 
   // Load vector country polygons
   useEffect(() => {
@@ -236,13 +242,13 @@ export function ThreatGlobe() {
       })
   }, [events])
 
-  // Filter arcs to selected event's source when something is clicked
+  // Filter arcs only when user clicks a point while in arc mode
   const visibleArcs = useMemo(() => {
-    if (!selectedEvent) return arcs
+    if (!arcFocusEvent) return arcs
     return arcs.filter(
-      (a) => a.startLat === selectedEvent.source.lat && a.startLng === selectedEvent.source.lon
+      (a) => a.startLat === arcFocusEvent.source.lat && a.startLng === arcFocusEvent.source.lon
     )
-  }, [arcs, selectedEvent])
+  }, [arcs, arcFocusEvent])
 
   // Events per country for heatmap
   const countryCounts = useMemo(() => {
@@ -305,8 +311,12 @@ export function ThreatGlobe() {
   }, [])
 
   const handleClick = useCallback(
-    (d: object) => setSelected((d as GlobePoint).event),
-    [setSelected]
+    (d: object) => {
+      const event = (d as GlobePoint).event
+      setSelected(event)
+      setArcFocusEvent(viewMode === 'arcs' ? event : null)
+    },
+    [setSelected, viewMode]
   )
 
   // ── Render ──────────────────────────────────────────────────────────────────
