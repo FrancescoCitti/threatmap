@@ -29,7 +29,7 @@ function getSevColor(sev: number) {
   return SEV_COLOR[sev] ?? DEFAULT_COLOR
 }
 
-// ── ISO 3166-1 numeric → alpha-2 (covers all 177 topojson geometries) ────────
+// ── ISO 3166-1 numeric → alpha-2 ─────────────────────────────────────────────
 
 const ISO_NUM_TO_A2: Record<number, string> = {
   4:'AF', 8:'AL', 10:'AQ', 12:'DZ', 24:'AO', 31:'AZ', 32:'AR', 36:'AU',
@@ -59,19 +59,15 @@ const ISO_NUM_TO_A2: Record<number, string> = {
   854:'BF', 858:'UY', 860:'UZ', 862:'VE', 882:'WS', 887:'YE', 894:'ZM',
 }
 
-// ── Major internet infrastructure hubs (arc destinations) ────────────────────
+// ── Internet infrastructure hubs (arc destinations) ───────────────────────────
 
 const HUBS = [
-  { lat: 40.71, lng: -74.01 },  // New York
-  { lat: 51.51, lng: -0.13  },  // London
-  { lat: 50.11, lng:  8.68  },  // Frankfurt
-  { lat: 35.68, lng: 139.69 },  // Tokyo
-  { lat:  1.35, lng: 103.82 },  // Singapore
-  { lat:-23.55, lng: -46.63 },  // São Paulo
+  { lat: 40.71, lng: -74.01 }, { lat: 51.51, lng:  -0.13 },
+  { lat: 50.11, lng:   8.68 }, { lat: 35.68, lng: 139.69 },
+  { lat:  1.35, lng: 103.82 }, { lat:-23.55, lng:  -46.63 },
 ]
 
 function pickHub(lat: number, lng: number, ip: string) {
-  // Sort by geographic distance descending, pick from top-3 based on IP hash
   const sorted = [...HUBS].sort(
     (a, b) =>
       (lat - b.lat) ** 2 + (lng - b.lng) ** 2 -
@@ -83,33 +79,31 @@ function pickHub(lat: number, lng: number, ip: string) {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-interface GlobePoint {
+interface GlobePoint  {
   lat: number; lng: number; size: number; color: string; event: ThreatEvent
 }
 interface ArcPoint {
   startLat: number; startLng: number
-  endLat: number; endLng: number
-  color: [string, string]
-  dashTime: number
-  event: ThreatEvent
+  endLat: number;   endLng: number
+  color: [string, string]; dashTime: number; event: ThreatEvent
+}
+interface ClusterRing {
+  lat: number; lng: number
+  subnet: string; count: number; maxSev: number; color: string
 }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type GeoFeature = any
 
-type ViewMode = 'events' | 'arcs' | 'heat'
+type ViewMode = 'events' | 'arcs' | 'heat' | 'clusters'
 
-// ── Procedural globe texture (dark navy, fully vector-friendly) ───────────────
+// ── Procedural dark-ocean globe texture ───────────────────────────────────────
 
 function makeDarkGlobeTexture(): string {
   const canvas = document.createElement('canvas')
-  canvas.width = 512
-  canvas.height = 256
+  canvas.width = 512; canvas.height = 256
   const ctx = canvas.getContext('2d')!
-  // Subtle pole-to-equator gradient for a faint sense of depth
   const g = ctx.createLinearGradient(0, 0, 0, 256)
-  g.addColorStop(0,   '#040c17')
-  g.addColorStop(0.5, '#070f1e')
-  g.addColorStop(1,   '#040c17')
+  g.addColorStop(0, '#040c17'); g.addColorStop(0.5, '#070f1e'); g.addColorStop(1, '#040c17')
   ctx.fillStyle = g
   ctx.fillRect(0, 0, 512, 256)
   return canvas.toDataURL('image/jpeg', 0.9)
@@ -119,17 +113,26 @@ function makeDarkGlobeTexture(): string {
 
 export function ThreatGlobe() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const globeRef = useRef<any>(null)
+  const globeRef     = useRef<any>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const [dims, setDims] = useState({ width: 0, height: 0 })
+  const [dims, setDims]           = useState({ width: 0, height: 0 })
   const [countries, setCountries] = useState<GeoFeature[]>([])
-  const [viewMode, setViewMode] = useState<ViewMode>('events')
+  const [viewMode, setViewMode]   = useState<ViewMode>('events')
   const [arcFocusEvent, setArcFocusEvent] = useState<ThreatEvent | null>(null)
+
+  // Persistent visual intensity (0.3–1.5, default 1)
+  const [intensity, setIntensity] = useState(() => {
+    try { return parseFloat(localStorage.getItem('globe-intensity') ?? '1') } catch { return 1 }
+  })
+  useEffect(() => {
+    try { localStorage.setItem('globe-intensity', String(intensity)) } catch {}
+  }, [intensity])
+
   const { selectedEvent, setSelected } = useThreatStore()
-  const events = useFilteredEvents()
+  const events        = useFilteredEvents()
   const darkGlobeTexture = useMemo(() => makeDarkGlobeTexture(), [])
 
-  // Clear arc focus when leaving arc mode or when the detail panel is closed
+  // Clear arc focus on mode change or panel close
   useEffect(() => {
     if (viewMode !== 'arcs' || !selectedEvent) setArcFocusEvent(null)
   }, [viewMode, selectedEvent])
@@ -137,7 +140,7 @@ export function ThreatGlobe() {
   // Load vector country polygons
   useEffect(() => {
     fetch(`${import.meta.env.BASE_URL}data/countries-110m.json`)
-      .then((r) => r.json())
+      .then(r => r.json())
       .then((topo: Topology) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const fc = feature(topo, (topo.objects as any).countries) as any
@@ -150,7 +153,7 @@ export function ThreatGlobe() {
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
-    const ro = new ResizeObserver((entries) => {
+    const ro = new ResizeObserver(entries => {
       const { width, height } = entries[0].contentRect
       setDims({ width, height })
     })
@@ -158,7 +161,7 @@ export function ThreatGlobe() {
     return () => ro.disconnect()
   }, [])
 
-  // Configure renderer, controls, and procedural star field
+  // Renderer, controls, star field
   useEffect(() => {
     const g = globeRef.current
     if (!g || dims.width === 0) return
@@ -172,51 +175,50 @@ export function ThreatGlobe() {
       if (obj.isMesh && obj.material) {
         const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
         mats.forEach((mat: any) => {
-          ['map', 'bumpMap', 'specularMap', 'normalMap'].forEach((key) => {
+          ['map','bumpMap','specularMap','normalMap'].forEach(key => {
             if (mat[key]) { mat[key].anisotropy = maxAniso; mat[key].needsUpdate = true }
           })
         })
       }
     })
 
-    // Procedural star field — crisp at any zoom
     if (!scene.getObjectByName('starfield')) {
       const COUNT = 8000, R = 900
-      const positions = new Float32Array(COUNT * 3)
-      const colors = new Float32Array(COUNT * 3)
+      const pos = new Float32Array(COUNT * 3)
+      const col = new Float32Array(COUNT * 3)
       const tints = [[1,1,1],[0.85,0.92,1],[1,0.95,0.85],[0.75,0.85,1]]
       for (let i = 0; i < COUNT; i++) {
         const theta = Math.random() * Math.PI * 2
-        const phi = Math.acos(2 * Math.random() - 1)
-        positions[i*3]   = R * Math.sin(phi) * Math.cos(theta)
-        positions[i*3+1] = R * Math.sin(phi) * Math.sin(theta)
-        positions[i*3+2] = R * Math.cos(phi)
+        const phi   = Math.acos(2 * Math.random() - 1)
+        pos[i*3]   = R * Math.sin(phi) * Math.cos(theta)
+        pos[i*3+1] = R * Math.sin(phi) * Math.sin(theta)
+        pos[i*3+2] = R * Math.cos(phi)
         const [r,gv,b] = tints[Math.floor(Math.random() * tints.length)]
         const br = 0.4 + Math.random() * 0.6
-        colors[i*3]=r*br; colors[i*3+1]=gv*br; colors[i*3+2]=b*br
+        col[i*3]=r*br; col[i*3+1]=gv*br; col[i*3+2]=b*br
       }
       const geo = new THREE.BufferGeometry()
-      geo.setAttribute('position', new THREE.BufferAttribute(positions, 3))
-      geo.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3))
+      geo.setAttribute('color',    new THREE.BufferAttribute(col, 3))
       const mat = new THREE.PointsMaterial({ size:0.6, sizeAttenuation:false, vertexColors:true, transparent:true, opacity:0.9 })
       const stars = new THREE.Points(geo, mat)
       stars.name = 'starfield'
       scene.add(stars)
     }
 
-    g.controls().autoRotate = true
-    g.controls().autoRotateSpeed = 0.25
-    g.controls().enableDamping = true
-    g.controls().dampingFactor = 0.08
-    g.controls().minDistance = 101
-    g.controls().maxDistance = 800
+    g.controls().autoRotate       = true
+    g.controls().autoRotateSpeed  = 0.25
+    g.controls().enableDamping    = true
+    g.controls().dampingFactor    = 0.08
+    g.controls().minDistance      = 101
+    g.controls().maxDistance      = 800
     g.pointOfView({ lat: 30, lng: 15, altitude: 2.2 }, 0)
   }, [dims.width])
 
-  // ── Derived data ────────────────────────────────────────────────────────────
+  // ── Derived data ─────────────────────────────────────────────────────────────
 
   const points: GlobePoint[] = useMemo(
-    () => events.map((e) => ({
+    () => events.map(e => ({
       lat: e.source.lat, lng: e.source.lon,
       size: e.severity * 0.18 + 0.12,
       color: getColor(e.malware_family),
@@ -225,40 +227,58 @@ export function ThreatGlobe() {
     [events]
   )
 
-  // Top 80 events by severity → arcs toward internet hubs
   const arcs: ArcPoint[] = useMemo(() => {
     return [...events]
-      .filter((e) => e.source.lat !== 0 || e.source.lon !== 0)
+      .filter(e => e.source.lat !== 0 || e.source.lon !== 0)
       .sort((a, b) => b.severity - a.severity)
       .slice(0, 80)
-      .map((e) => {
+      .map(e => {
         const hub = pickHub(e.source.lat, e.source.lon, e.source.ip)
         const c = getSevColor(e.severity)
         return {
           startLat: e.source.lat, startLng: e.source.lon,
           endLat: hub.lat, endLng: hub.lng,
-          color: [c, 'rgba(255,255,255,0.6)'] as [string, string],
-          dashTime: e.severity >= 3 ? 1200 : 2400,
-          event: e,
+          color: [c, 'rgba(255,255,255,0.5)'] as [string, string],
+          dashTime: 0, event: e,
         }
       })
   }, [events])
 
-  // Filter arcs only when user clicks a point while in arc mode
   const visibleArcs = useMemo(() => {
     if (!arcFocusEvent) return arcs
     return arcs.filter(
-      (a) => a.startLat === arcFocusEvent.source.lat && a.startLng === arcFocusEvent.source.lon
+      a => a.startLat === arcFocusEvent.source.lat && a.startLng === arcFocusEvent.source.lon
     )
   }, [arcs, arcFocusEvent])
 
-  // Events per country for heatmap
+  // Campaign clusters: group by /24 subnet, ≥2 events
+  const clusters: ClusterRing[] = useMemo(() => {
+    const groups = new Map<string, ThreatEvent[]>()
+    events.forEach(e => {
+      if (e.source.lat === 0 && e.source.lon === 0) return
+      const subnet = e.source.ip.split('.').slice(0, 3).join('.')
+      const g = groups.get(subnet) ?? []
+      g.push(e)
+      groups.set(subnet, g)
+    })
+    return [...groups.entries()]
+      .filter(([, g]) => g.length >= 2)
+      .map(([subnet, g]) => ({
+        lat:    g.reduce((s, e) => s + e.source.lat, 0) / g.length,
+        lng:    g.reduce((s, e) => s + e.source.lon, 0) / g.length,
+        subnet,
+        count:  g.length,
+        maxSev: Math.max(...g.map(e => e.severity)),
+        color:  getSevColor(Math.max(...g.map(e => e.severity))),
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 40)
+  }, [events])
+
+  // Country counts for heatmap
   const countryCounts = useMemo(() => {
     const m = new Map<string, number>()
-    events.forEach((e) => {
-      const cc = e.source.country_code
-      m.set(cc, (m.get(cc) ?? 0) + 1)
-    })
+    events.forEach(e => m.set(e.source.country_code, (m.get(e.source.country_code) ?? 0) + 1))
     return m
   }, [events])
 
@@ -267,15 +287,15 @@ export function ThreatGlobe() {
     [countryCounts]
   )
 
-  // ── Globe callbacks ─────────────────────────────────────────────────────────
+  // ── Globe callbacks ───────────────────────────────────────────────────────────
 
   const polygonCapColor = useCallback(
     (feat: GeoFeature) => {
       const alpha2 = ISO_NUM_TO_A2[feat.id as number]
-      const count = alpha2 ? (countryCounts.get(alpha2) ?? 0) : 0
+      const count  = alpha2 ? (countryCounts.get(alpha2) ?? 0) : 0
       if (viewMode !== 'heat' || count === 0) return 'rgba(10,24,44,0.82)'
-      const t = Math.min(count / maxCount, 1)
-      const r = Math.round(20 + t * 210)
+      const t  = Math.min(count / maxCount, 1)
+      const r  = Math.round(20 + t * 210)
       const gv = Math.round(40 - t * 15)
       const b  = Math.round(60 - t * 35)
       return `rgba(${r},${gv},${b},${0.45 + t * 0.5})`
@@ -287,9 +307,9 @@ export function ThreatGlobe() {
     (feat: GeoFeature) => {
       if (viewMode !== 'heat') return 0.003
       const alpha2 = ISO_NUM_TO_A2[feat.id as number]
-      const count = alpha2 ? (countryCounts.get(alpha2) ?? 0) : 0
+      const count  = alpha2 ? (countryCounts.get(alpha2) ?? 0) : 0
       if (count === 0) return 0.001
-      return 0.003 + (Math.min(count / maxCount, 1)) * 0.06
+      return 0.003 + Math.min(count / maxCount, 1) * 0.06
     },
     [viewMode, countryCounts, maxCount]
   )
@@ -321,7 +341,19 @@ export function ThreatGlobe() {
     [setSelected, viewMode]
   )
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+
+  // ── Render ────────────────────────────────────────────────────────────────────
+
+  const atmoOpacity = Math.min(0.6, 0.4 * intensity)
+  const atmoAlt     = 0.15 * Math.min(intensity, 1.4)
+  const ptAlt       = 0.02 * Math.min(intensity, 1.5)
+
+  const VIEW_MODES: Array<{ id: ViewMode; label: string }> = [
+    { id: 'events',   label: 'EVENTS'  },
+    { id: 'arcs',     label: 'ARCS'    },
+    { id: 'heat',     label: 'HEAT'    },
+    { id: 'clusters', label: 'CLUST'   },
+  ]
 
   return (
     <div ref={containerRef} className="absolute inset-0">
@@ -332,8 +364,8 @@ export function ThreatGlobe() {
           height={dims.height}
 
           globeImageUrl={darkGlobeTexture}
-          atmosphereColor="rgba(56,189,248,0.4)"
-          atmosphereAltitude={0.15}
+          atmosphereColor={`rgba(56,189,248,${atmoOpacity})`}
+          atmosphereAltitude={atmoAlt}
 
           polygonsData={countries}
           polygonCapColor={polygonCapColor}
@@ -341,12 +373,12 @@ export function ThreatGlobe() {
           polygonStrokeColor={() => 'rgba(56,189,248,0.4)'}
           polygonAltitude={polygonAltitude}
 
-          pointsData={points}
+          pointsData={viewMode !== 'clusters' ? points : []}
           pointLat="lat"
           pointLng="lng"
           pointColor="color"
           pointRadius="size"
-          pointAltitude={0.02}
+          pointAltitude={ptAlt}
           pointLabel={pointLabel}
           pointsTransitionDuration={800}
           onPointClick={handleClick}
@@ -362,24 +394,46 @@ export function ThreatGlobe() {
           arcDashGap={0}
           arcDashAnimateTime={0}
           arcAltitudeAutoScale={0.22}
+
+          ringsData={viewMode === 'clusters' ? clusters : []}
+          ringLat="lat"
+          ringLng="lng"
+          ringColor={(d: object) => (d as ClusterRing).color}
+          ringMaxRadius={(d: object) => Math.min(1.5 + (d as ClusterRing).count * 0.5, 5)}
+          ringPropagationSpeed={1.2}
+          ringRepeatPeriod={2500}
         />
       )}
 
-      {/* Layer toggle — bottom-centre of the globe */}
-      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-10 flex gap-1">
-        {(['events', 'arcs', 'heat'] as const).map((m) => (
-          <button
-            key={m}
-            onClick={() => setViewMode(m)}
-            className={`px-3 py-1 text-[10px] font-mono tracking-widest border rounded-sm transition-all ${
-              viewMode === m
-                ? 'bg-sky-500/20 border-sky-500/60 text-sky-400'
-                : 'bg-black/50 border-white/10 text-slate-600 hover:text-slate-300 hover:border-white/25'
-            }`}
-          >
-            {m === 'events' ? 'EVENTS' : m === 'arcs' ? 'ARCS' : 'HEAT'}
-          </button>
-        ))}
+      {/* Layer toggles + intensity slider */}
+      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2">
+        <div className="flex gap-1">
+          {VIEW_MODES.map(({ id, label }) => (
+            <button
+              key={id}
+              onClick={() => setViewMode(id)}
+              className={`px-3 py-1 text-[10px] font-mono tracking-widest border rounded-sm transition-all ${
+                viewMode === id
+                  ? 'bg-sky-500/20 border-sky-500/60 text-sky-400'
+                  : 'bg-black/50 border-white/10 text-slate-600 hover:text-slate-300 hover:border-white/25'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Visual intensity slider */}
+        <div className="flex items-center gap-2 bg-black/40 backdrop-blur-sm px-3 py-1 rounded-sm border border-white/5">
+          <span className="text-[8px] text-slate-700 font-mono select-none">DIM</span>
+          <input
+            type="range" min="0.3" max="1.5" step="0.05"
+            value={intensity}
+            onChange={ev => setIntensity(parseFloat(ev.target.value))}
+            className="w-20 h-px cursor-pointer accent-sky-500"
+          />
+          <span className="text-[8px] text-slate-700 font-mono select-none">BRIGHT</span>
+        </div>
       </div>
     </div>
   )

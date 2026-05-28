@@ -4,6 +4,7 @@ import { ThreatFeed } from './components/ThreatFeed/ThreatFeed'
 import { StatusBar } from './components/StatusBar/StatusBar'
 import { useThreatData } from './hooks/useThreatData'
 import { useThreatStore } from './stores/threatStore'
+import { useUrlSync } from './hooks/useUrlSync'
 import { getActorsForMalware } from './data/threatActors'
 import type { ThreatEvent } from './types/schema'
 
@@ -41,6 +42,7 @@ function DetailRow({
 
 function EventDetail({ event: e }: { event: ThreatEvent }) {
   const setSelected = useThreatStore((s) => s.setSelected)
+  const setSearchQuery = useThreatStore((s) => s.setSearchQuery)
   const [cveExpanded, setCveExpanded] = useState(false)
 
   return (
@@ -92,10 +94,24 @@ function EventDetail({ event: e }: { event: ThreatEvent }) {
         })()}
         <DetailRow label="COUNTRY" value={e.source.country_name} />
         {e.source.asn != null && (
-          <DetailRow
-            label="ASN"
-            value={`AS${e.source.asn}${e.source.as_org ? ' · ' + e.source.as_org : ''}`}
-          />
+          <div className="flex gap-2 items-start">
+            <span className="text-slate-600 w-16 shrink-0 text-[10px] pt-px">ASN</span>
+            <span className="text-xs text-slate-300">
+              AS{e.source.asn}
+              {e.source.as_org && (
+                <>
+                  {' · '}
+                  <button
+                    onClick={() => setSearchQuery(e.source.as_org!)}
+                    className="text-sky-400 hover:text-sky-300 underline underline-offset-2 decoration-sky-800 hover:decoration-sky-400 transition-colors cursor-pointer"
+                    title="Filter by this ASN"
+                  >
+                    {e.source.as_org}
+                  </button>
+                </>
+              )}
+            </span>
+          </div>
         )}
         <div className="flex gap-2 items-center">
           <span className="text-slate-600 w-16 shrink-0 text-[10px]">SEVERITY</span>
@@ -174,6 +190,27 @@ function EventDetail({ event: e }: { event: ThreatEvent }) {
           )
         })()}
 
+        <div className="flex gap-2 items-center">
+          <span className="text-slate-600 w-16 shrink-0 text-[10px]">PIVOT</span>
+          <div className="flex gap-1">
+            {[
+              { label: 'VT', href: `https://www.virustotal.com/gui/ip-address/${e.source.ip}` },
+              { label: 'AIPDB', href: `https://www.abuseipdb.com/check/${e.source.ip}` },
+              { label: 'SHODAN', href: `https://www.shodan.io/host/${e.source.ip}` },
+            ].map(({ label, href }) => (
+              <a
+                key={label}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-1.5 py-0.5 text-[9px] font-mono bg-slate-900 border border-slate-800 text-sky-600 hover:text-sky-400 hover:border-sky-700 rounded transition-colors"
+              >
+                {label}
+              </a>
+            ))}
+          </div>
+        </div>
+
         <DetailRow label="TLP" value={`TLP:${e.tlp}`} />
         {e.mitre_ttps && e.mitre_ttps.length > 0 && (
           <DetailRow label="TTPs" value={e.mitre_ttps.join('  ')} />
@@ -204,6 +241,7 @@ function EventDetail({ event: e }: { event: ThreatEvent }) {
 
 export default function App() {
   useThreatData()
+  useUrlSync()
   const selectedEvent = useThreatStore(s => s.selectedEvent)
   const sidebarOpen   = useThreatStore(s => s.sidebarOpen)
   const setSidebarOpen = useThreatStore(s => s.setSidebarOpen)
