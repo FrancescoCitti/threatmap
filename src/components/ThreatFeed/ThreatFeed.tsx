@@ -137,7 +137,7 @@ function FeedTab() {
   )
 
   const recent = useMemo(
-    () => [...filteredEvents].sort((a, b) => b.ts.localeCompare(a.ts)).slice(0, 100),
+    () => [...filteredEvents].sort((a, b) => b.ts.localeCompare(a.ts)),
     [filteredEvents]
   )
 
@@ -151,9 +151,31 @@ function FeedTab() {
           type="text"
           value={searchQuery}
           onChange={ev => setSearchQuery(ev.target.value)}
-          placeholder="IP, CVE, malware, country, TTP…"
+          placeholder="IP, CVE, malware, actor, severity, TTP…"
           className="w-full bg-black/50 border border-white/10 rounded-sm px-2 py-1.5 text-[11px] font-mono text-slate-300 placeholder:text-slate-700 focus:outline-none focus:border-sky-500/50 transition-colors"
         />
+
+        {/* Severity quick-filter chips */}
+        <div className="flex gap-1 mt-1.5">
+          {([
+            { label: 'CRIT', value: 'critical', on: 'bg-red-950/60 border-red-600 text-red-400',   off: 'border-white/10 text-slate-700 hover:text-red-500 hover:border-red-800' },
+            { label: 'HIGH', value: 'high',     on: 'bg-orange-950/60 border-orange-600 text-orange-400', off: 'border-white/10 text-slate-700 hover:text-orange-500 hover:border-orange-800' },
+            { label: 'MED',  value: 'medium',   on: 'bg-yellow-950/60 border-yellow-600 text-yellow-400', off: 'border-white/10 text-slate-700 hover:text-yellow-500 hover:border-yellow-800' },
+            { label: 'LOW',  value: 'low',      on: 'bg-slate-900 border-slate-600 text-slate-300',       off: 'border-white/10 text-slate-700 hover:text-slate-400 hover:border-slate-600' },
+          ] as const).map(({ label, value, on, off }) => {
+            const active = searchQuery.trim().toLowerCase() === value
+            return (
+              <button
+                key={value}
+                onClick={() => setSearchQuery(active ? '' : value)}
+                className={`flex-1 py-0.5 text-[8px] font-mono tracking-wider rounded-sm border transition-all ${active ? on : off}`}
+              >
+                {label}
+              </button>
+            )
+          })}
+        </div>
+
         {isFiltered && (
           <div className="flex items-center justify-between mt-1.5">
             <span className="text-[9px] text-slate-600 font-mono">

@@ -390,18 +390,18 @@ export function ThreatGlobe() {
           arcEndLng="endLng"
           arcColor="color"
           arcStroke={0.18}
-          arcDashLength={1}
-          arcDashGap={0}
-          arcDashAnimateTime={0}
+          arcDashLength={0.2}
+          arcDashGap={0.8}
+          arcDashAnimateTime={6000}
           arcAltitudeAutoScale={0.22}
 
-          ringsData={viewMode === 'clusters' ? clusters : []}
+          ringsData={clusters}
           ringLat="lat"
           ringLng="lng"
-          ringColor={(d: object) => (d as ClusterRing).color}
-          ringMaxRadius={(d: object) => Math.min(1.5 + (d as ClusterRing).count * 0.5, 5)}
-          ringPropagationSpeed={1.2}
-          ringRepeatPeriod={2500}
+          ringColor={(d: object) => viewMode === 'clusters' ? (d as ClusterRing).color : 'rgba(0,0,0,0)'}
+          ringMaxRadius={(d: object) => viewMode === 'clusters' ? Math.min(1.5 + (d as ClusterRing).count * 0.5, 5) : 0.001}
+          ringPropagationSpeed={viewMode === 'clusters' ? 1.2 : 50}
+          ringRepeatPeriod={viewMode === 'clusters' ? 2500 : 50}
         />
       )}
 
