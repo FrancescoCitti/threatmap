@@ -357,10 +357,10 @@ export function ThreatGlobe() {
           arcEndLat="endLat"
           arcEndLng="endLng"
           arcColor="color"
-          arcStroke={0.15}
-          arcDashLength={0.06}
-          arcDashGap={0.03}
-          arcDashAnimateTime="dashTime"
+          arcStroke={0.18}
+          arcDashLength={1}
+          arcDashGap={0}
+          arcDashAnimateTime={0}
           arcAltitudeAutoScale={0.22}
         />
       )}

@@ -235,7 +235,7 @@ export default function App() {
 
       {/* Right sidebar — overlay on mobile, always-on on desktop */}
       <div
-        className={`fixed md:absolute top-0 right-0 w-80 h-full md:h-[calc(100vh-2rem)]
+        className={`fixed md:absolute top-0 right-0 w-96 h-full md:h-[calc(100vh-2rem)]
           bg-black/90 md:bg-black/65 backdrop-blur-sm border-l border-white/[0.07]
           z-30 md:z-10 flex flex-col transition-transform duration-200
           ${sidebarOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}`}

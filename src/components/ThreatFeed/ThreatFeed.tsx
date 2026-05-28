@@ -264,16 +264,33 @@ const MOTIVATION_COLOR: Record<string, string> = {
 function IntelTab() {
   const filteredEvents = useFilteredEvents()
 
-  const activeFamilies = useMemo(() => {
-    const s = new Set<string>()
-    filteredEvents.forEach(e => { if (e.malware_family) s.add(e.malware_family) })
-    return s
+  // Build a broad signal set: malware_family + lowercase/hyphenated tags + observed TTPs
+  const { activeFamilies, activeTtps } = useMemo(() => {
+    const families = new Set<string>()
+    const ttps = new Set<string>()
+    filteredEvents.forEach(e => {
+      if (e.malware_family) families.add(e.malware_family)
+      // Tags like "qakbot", "cobalt-strike" written by the pipeline
+      e.tags.forEach(t => families.add(t))
+      e.mitre_ttps?.forEach(t => ttps.add(t))
+    })
+    return { activeFamilies: families, activeTtps: ttps }
   }, [filteredEvents])
 
-  const activeActors = useMemo(
-    () => THREAT_ACTOR_DB.filter(a => a.malware.some(m => activeFamilies.has(m))),
-    [activeFamilies]
-  )
+  const activeActors = useMemo(() => {
+    return THREAT_ACTOR_DB.filter(actor => {
+      // Primary: malware_family exact match
+      if (actor.malware.some(m => activeFamilies.has(m))) return true
+      // Secondary: normalised tag match (lowercase, hyphenated)
+      if (actor.malware.some(m => {
+        const norm = m.toLowerCase().replace(/\s+/g, '-')
+        return activeFamilies.has(norm) || activeFamilies.has(m.toLowerCase())
+      })) return true
+      // Tertiary: TTP overlap — require ≥2 shared TTPs to avoid noise
+      const overlap = actor.ttps.filter(t => activeTtps.has(t)).length
+      return overlap >= 2
+    })
+  }, [activeFamilies, activeTtps])
 
   const sitrep = useMemo(() => generateSitrep(filteredEvents), [filteredEvents])
 
