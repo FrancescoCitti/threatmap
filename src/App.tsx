@@ -54,6 +54,15 @@ function EventDetail({ event: e }: { event: ThreatEvent }) {
         </button>
       </div>
 
+      {e.kev_match && (
+        <div className="mx-3 my-1.5 px-2 py-1 bg-red-950/60 border border-red-700/50 rounded-sm flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />
+          <span className="text-[9px] font-bold tracking-widest text-red-400">
+            CISA KEV — ACTIVELY EXPLOITED CVE ON ATTACKER INFRA
+          </span>
+        </div>
+      )}
+
       <div className="px-3 py-2 space-y-1.5">
         <DetailRow label="IP" value={e.source.ip} />
         <DetailRow label="FEED" value={e.feed.toUpperCase()} />
@@ -74,6 +83,46 @@ function EventDetail({ event: e }: { event: ThreatEvent }) {
             {SEV_LABEL[e.severity]}
           </span>
         </div>
+
+        {e.source.ports && e.source.ports.length > 0 && (
+          <div className="flex gap-2 items-start">
+            <span className="text-slate-600 w-16 shrink-0 text-[10px] pt-0.5">PORTS</span>
+            <div className="flex flex-wrap gap-1">
+              {e.source.ports.map((p) => (
+                <span key={p} className="px-1 py-px bg-slate-900 border border-slate-800 text-slate-400 text-[9px] font-mono rounded">
+                  {p}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {e.source.vulns && e.source.vulns.length > 0 && (
+          <div className="flex gap-2 items-start">
+            <span className="text-slate-600 w-16 shrink-0 text-[10px] pt-0.5">CVEs</span>
+            <div className="flex flex-col gap-0.5">
+              {e.source.vulns.map((cve) => (
+                <span key={cve} className="text-[9px] font-mono text-orange-400">
+                  {cve}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {e.source.shodan_tags && e.source.shodan_tags.length > 0 && (
+          <div className="flex gap-2 items-start">
+            <span className="text-slate-600 w-16 shrink-0 text-[10px] pt-0.5">INFRA</span>
+            <div className="flex flex-wrap gap-1">
+              {e.source.shodan_tags.map((t) => (
+                <span key={t} className="px-1 py-px bg-slate-900 border border-slate-800 text-slate-500 text-[9px] rounded">
+                  {t}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         <DetailRow label="TLP" value={`TLP:${e.tlp}`} />
         {e.mitre_ttps && e.mitre_ttps.length > 0 && (
           <DetailRow label="TTPs" value={e.mitre_ttps.join('  ')} />

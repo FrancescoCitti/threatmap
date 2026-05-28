@@ -1,7 +1,20 @@
 import hashlib
+import re
 from datetime import datetime, timezone
 
 from enrichment.country_centroids import CENTROIDS, NAMES
+
+_IP_RE = re.compile(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$")
+
+# ThreatFox uses slightly different casing for some families
+_TF_ALIASES: dict[str, str] = {
+    "CobaltStrike": "Cobalt Strike",
+    "Qakbot": "QakBot",
+    "QAKBOT": "QakBot",
+    "Trickbot": "TrickBot",
+    "TRICKBOT": "TrickBot",
+    "Dridex": "Dridex",
+}
 
 MALWARE_SEVERITY: dict[str, int] = {
     "Emotet": 4,
@@ -38,9 +51,11 @@ def _coerce_ts(raw: str | None, fallback: str) -> str:
     if not raw:
         return fallback
     raw = str(raw).strip()
-    # Already ISO with T
     if "T" in raw:
         return raw if raw.endswith("Z") or "+" in raw else raw + "Z"
+    # ThreatFox format: "2024-01-15 10:30:00 UTC"
+    if " UTC" in raw:
+        return raw.replace(" UTC", "Z").replace(" ", "T", 1)
     # Date-only: 2024-01-15
     if len(raw) == 10 and raw[4] == "-":
         return raw + "T00:00:00Z"
@@ -170,5 +185,112 @@ def normalize_feodo(entries: list[dict]) -> list[dict]:
                 "mitre_ttps": MALWARE_TTPS.get(malware, []),
             }
         )
+
+    return events
+
+
+def normalize_threatfox(entries: list[dict], geo: dict[str, dict]) -> list[dict]:
+    """Normalize ThreatFox ip:port IOC entries."""
+    now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    events: list[dict] = []
+
+    for entry in entries:
+        ioc = entry.get("ioc", "")
+        ip = ioc.rsplit(":", 1)[0] if ":" in ioc else ioc
+        if not ip or not _IP_RE.match(ip):
+            continue
+
+        g = geo.get(ip, {})
+        country_code = (g.get("countryCode") or "XX").upper()
+        country_name = g.get("country") or NAMES.get(country_code, country_code)
+        lat = float(g.get("lat") or CENTROIDS.get(country_code, (0.0, 0.0))[0])
+        lon = float(g.get("lon") or CENTROIDS.get(country_code, (0.0, 0.0))[1])
+        as_raw: str = g.get("as") or ""
+        asn = int(as_raw.split()[0].lstrip("AS")) if as_raw.startswith("AS") else None
+        as_org: str | None = (
+            g.get("org") or (as_raw.split(" ", 1)[1] if " " in as_raw else None) or None
+        )
+
+        raw_malware = str(entry.get("malware_printable") or "Unknown").strip()
+        malware = _TF_ALIASES.get(raw_malware, raw_malware)
+
+        confidence = int(entry.get("confidence_level") or 50)
+        sev_by_confidence = 4 if confidence >= 90 else (3 if confidence >= 70 else (2 if confidence >= 50 else 1))
+        severity = max(MALWARE_SEVERITY.get(malware, sev_by_confidence), sev_by_confidence)
+        severity = min(4, severity)
+
+        threat_type = str(entry.get("threat_type") or "")
+        event_type = "c2" if "botnet" in threat_type or "_cc" in threat_type else "ioc"
+
+        ts = _coerce_ts(entry.get("first_seen"), now)
+        event_id = hashlib.sha256(f"threatfox:{ioc}".encode()).hexdigest()[:16]
+
+        raw_tags = entry.get("tags") or []
+        tags = ["threatfox"] + [t for t in raw_tags if isinstance(t, str)]
+
+        events.append({
+            "id": event_id,
+            "ts": ts,
+            "feed": "threatfox",
+            "type": event_type,
+            "severity": severity,
+            "malware_family": malware if malware != "Unknown" else None,
+            "source": {
+                "ip": ip,
+                "country_code": country_code,
+                "country_name": country_name,
+                "lat": lat,
+                "lon": lon,
+                "asn": asn,
+                "as_org": as_org,
+            },
+            "tlp": "WHITE",
+            "tags": tags,
+            "mitre_ttps": MALWARE_TTPS.get(malware, []),
+        })
+
+    return events
+
+
+def normalize_emerging_threats(ips: list[str], geo: dict[str, dict]) -> list[dict]:
+    """Normalize Emerging Threats compromised IP list."""
+    now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    events: list[dict] = []
+
+    for ip in ips:
+        if not ip or not _IP_RE.match(ip):
+            continue
+        g = geo.get(ip, {})
+        country_code = (g.get("countryCode") or "XX").upper()
+        country_name = g.get("country") or NAMES.get(country_code, country_code)
+        lat = float(g.get("lat") or CENTROIDS.get(country_code, (0.0, 0.0))[0])
+        lon = float(g.get("lon") or CENTROIDS.get(country_code, (0.0, 0.0))[1])
+        as_raw: str = g.get("as") or ""
+        asn = int(as_raw.split()[0].lstrip("AS")) if as_raw.startswith("AS") else None
+        as_org: str | None = (
+            g.get("org") or (as_raw.split(" ", 1)[1] if " " in as_raw else None) or None
+        )
+
+        event_id = hashlib.sha256(f"et:{ip}".encode()).hexdigest()[:16]
+
+        events.append({
+            "id": event_id,
+            "ts": now,
+            "feed": "emerging_threats",
+            "type": "scanner",
+            "severity": 2,
+            "source": {
+                "ip": ip,
+                "country_code": country_code,
+                "country_name": country_name,
+                "lat": lat,
+                "lon": lon,
+                "asn": asn,
+                "as_org": as_org,
+            },
+            "tlp": "WHITE",
+            "tags": ["blocklist", "compromised", "emerging-threats"],
+            "mitre_ttps": ["T1078", "T1190"],
+        })
 
     return events

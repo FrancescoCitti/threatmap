@@ -8,12 +8,16 @@ export const SourceGeoSchema = z.object({
   lon: z.number(),
   asn: z.number().nullable().optional(),
   as_org: z.string().nullable().optional(),
+  // Shodan InternetDB enrichment (present when Shodan has data for the IP)
+  ports: z.array(z.number()).optional().default([]),
+  vulns: z.array(z.string()).optional().default([]),
+  shodan_tags: z.array(z.string()).optional().default([]),
 })
 
 export const ThreatEventSchema = z.object({
   id: z.string(),
   ts: z.string(),
-  feed: z.enum(['feodo', 'dshield', 'malwarebazaar', 'threatfox', 'urlhaus']),
+  feed: z.enum(['feodo', 'dshield', 'malwarebazaar', 'threatfox', 'urlhaus', 'emerging_threats']),
   type: z.enum(['c2', 'scanner', 'malware_drop', 'ioc', 'botnet']),
   severity: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
   malware_family: z.string().optional(),
@@ -24,6 +28,7 @@ export const ThreatEventSchema = z.object({
   mitre_ttps: z.array(z.string()).optional(),
   tlp: z.enum(['WHITE', 'GREEN']),
   tags: z.array(z.string()),
+  kev_match: z.boolean().optional().default(false),
 })
 
 export const ThreatDataSchema = z.object({
