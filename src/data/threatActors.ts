@@ -148,3 +148,32 @@ export const THREAT_ACTOR_DB: ThreatActor[] = [
 export function getActorsForMalware(family: string): ThreatActor[] {
   return THREAT_ACTOR_DB.filter(a => a.malware.includes(family))
 }
+
+// ── Malpedia link helpers ─────────────────────────────────────────────────────
+
+const MALPEDIA_MALWARE_SLUGS: Record<string, string> = {
+  'Emotet':        'win.emotet',
+  'QakBot':        'win.qakbot',
+  'IcedID':        'win.icedid',
+  'TrickBot':      'win.trickbot',
+  'Dridex':        'win.dridex',
+  'BazarLoader':   'win.bazarloader',
+  'Cobalt Strike': 'win.cobalt_strike',
+  'AsyncRAT':      'win.asyncrat',
+  'NanoCore':      'win.nanocore',
+  'AgentTesla':    'win.agent_tesla',
+  'FormBook':      'win.formbook',
+  'Remcos':        'win.remcos',
+}
+
+export function malpediaMalwareUrl(family: string): string {
+  const slug = MALPEDIA_MALWARE_SLUGS[family]
+  return slug
+    ? `https://malpedia.caad.fkie.fraunhofer.de/details/${slug}`
+    : `https://malpedia.caad.fkie.fraunhofer.de/find?term=${encodeURIComponent(family)}`
+}
+
+// actor.id uses dashes (wizard-spider); Malpedia uses underscores (wizard_spider)
+export function malpediaActorUrl(actorId: string): string {
+  return `https://malpedia.caad.fkie.fraunhofer.de/actor/${actorId.replace(/-/g, '_')}`
+}

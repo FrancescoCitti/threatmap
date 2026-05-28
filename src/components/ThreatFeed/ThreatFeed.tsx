@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useThreatStore } from '../../stores/threatStore'
 import { useFilteredEvents } from '../../hooks/useFilteredEvents'
-import { THREAT_ACTOR_DB } from '../../data/threatActors'
+import { THREAT_ACTOR_DB, malpediaMalwareUrl, malpediaActorUrl } from '../../data/threatActors'
 import { MITRE_TECHNIQUES, TACTIC_ORDER } from '../../data/mitreTechniques'
 import type { ThreatEvent } from '../../types/schema'
 import type { SidebarTab } from '../../stores/threatStore'
@@ -422,7 +422,7 @@ function IntelTab() {
                 <div className="flex items-start justify-between gap-2 mb-1.5">
                   <div>
                     <a
-                      href={`https://malpedia.caad.fkie.fraunhofer.de/actor/${actor.id}`}
+                      href={malpediaActorUrl(actor.id)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-[11px] font-bold text-slate-100 hover:text-purple-300 font-mono leading-tight underline underline-offset-2 decoration-slate-700 hover:decoration-purple-500 transition-colors"
@@ -446,7 +446,7 @@ function IntelTab() {
                   {actor.malware.map(m => (
                     <a
                       key={m}
-                      href={`https://malpedia.caad.fkie.fraunhofer.de/find?term=${encodeURIComponent(m)}`}
+                      href={malpediaMalwareUrl(m)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className={`px-1 py-px text-[8px] font-mono rounded border transition-colors ${

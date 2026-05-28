@@ -5,7 +5,7 @@ import { StatusBar } from './components/StatusBar/StatusBar'
 import { useThreatData } from './hooks/useThreatData'
 import { useThreatStore } from './stores/threatStore'
 import { useUrlSync } from './hooks/useUrlSync'
-import { getActorsForMalware } from './data/threatActors'
+import { getActorsForMalware, malpediaMalwareUrl, malpediaActorUrl } from './data/threatActors'
 import type { ThreatEvent } from './types/schema'
 
 const SEV_LABEL: Record<number, string> = {
@@ -76,7 +76,7 @@ function EventDetail({ event: e }: { event: ThreatEvent }) {
           <div className="flex gap-2 items-start">
             <span className="text-slate-600 w-16 shrink-0 text-[10px] pt-px">MALWARE</span>
             <a
-              href={`https://malpedia.caad.fkie.fraunhofer.de/find?term=${encodeURIComponent(e.malware_family)}`}
+              href={malpediaMalwareUrl(e.malware_family)}
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs text-orange-400 hover:text-orange-300 underline underline-offset-2 decoration-orange-800 hover:decoration-orange-400 transition-colors break-all"
@@ -95,7 +95,7 @@ function EventDetail({ event: e }: { event: ThreatEvent }) {
                 {actors.map(a => (
                   <div key={a.id} className="flex items-center gap-1.5">
                     <a
-                      href={`https://malpedia.caad.fkie.fraunhofer.de/actor/${a.id}`}
+                      href={malpediaActorUrl(a.id)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-purple-400 hover:text-purple-300 text-[10px] font-semibold font-mono underline underline-offset-2 decoration-purple-900 hover:decoration-purple-500 transition-colors"
