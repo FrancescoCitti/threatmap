@@ -6,6 +6,7 @@ import * as THREE from 'three'
 import { feature } from 'topojson-client'
 import type { Topology } from 'topojson-specification'
 import { useThreatStore } from '../../stores/threatStore'
+import { useFilteredEvents } from '../../hooks/useFilteredEvents'
 import type { ThreatEvent } from '../../types/schema'
 
 // ── Colour palettes ───────────────────────────────────────────────────────────
@@ -124,7 +125,8 @@ export function ThreatGlobe() {
   const [countries, setCountries] = useState<GeoFeature[]>([])
   const [viewMode, setViewMode] = useState<ViewMode>('events')
   const [arcFocusEvent, setArcFocusEvent] = useState<ThreatEvent | null>(null)
-  const { events, selectedEvent, setSelected } = useThreatStore()
+  const { selectedEvent, setSelected } = useThreatStore()
+  const events = useFilteredEvents()
   const darkGlobeTexture = useMemo(() => makeDarkGlobeTexture(), [])
 
   // Clear arc focus when leaving arc mode or when the detail panel is closed

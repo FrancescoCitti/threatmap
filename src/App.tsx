@@ -4,6 +4,7 @@ import { ThreatFeed } from './components/ThreatFeed/ThreatFeed'
 import { StatusBar } from './components/StatusBar/StatusBar'
 import { useThreatData } from './hooks/useThreatData'
 import { useThreatStore } from './stores/threatStore'
+import { getActorsForMalware } from './data/threatActors'
 import type { ThreatEvent } from './types/schema'
 
 const SEV_LABEL: Record<number, string> = {
@@ -72,6 +73,23 @@ function EventDetail({ event: e }: { event: ThreatEvent }) {
         {e.malware_family && (
           <DetailRow label="MALWARE" value={e.malware_family} accent />
         )}
+        {e.malware_family && (() => {
+          const actors = getActorsForMalware(e.malware_family)
+          if (!actors.length) return null
+          return (
+            <div className="flex gap-2 items-start">
+              <span className="text-slate-600 w-16 shrink-0 text-[10px] pt-0.5">ACTOR</span>
+              <div className="flex flex-col gap-0.5">
+                {actors.map(a => (
+                  <div key={a.id}>
+                    <span className="text-purple-400 text-[10px] font-semibold font-mono">{a.name}</span>
+                    <span className="text-slate-600 text-[9px] ml-1.5 font-mono">{a.suspectedOrigin}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
         <DetailRow label="COUNTRY" value={e.source.country_name} />
         {e.source.asn != null && (
           <DetailRow
@@ -186,7 +204,9 @@ function EventDetail({ event: e }: { event: ThreatEvent }) {
 
 export default function App() {
   useThreatData()
-  const selectedEvent = useThreatStore((s) => s.selectedEvent)
+  const selectedEvent = useThreatStore(s => s.selectedEvent)
+  const sidebarOpen   = useThreatStore(s => s.sidebarOpen)
+  const setSidebarOpen = useThreatStore(s => s.setSidebarOpen)
 
   return (
     <div className="relative w-screen h-screen bg-[#070b14] overflow-hidden scanlines">
@@ -205,10 +225,31 @@ export default function App() {
         </div>
       </div>
 
-      {/* Right sidebar */}
-      <div className="absolute top-0 right-0 w-64 h-[calc(100vh-2rem)] bg-black/65 backdrop-blur-sm border-l border-white/[0.07] z-10">
+      {/* Mobile backdrop — closes sidebar on tap */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 z-20 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Right sidebar — overlay on mobile, always-on on desktop */}
+      <div
+        className={`fixed md:absolute top-0 right-0 w-80 h-full md:h-[calc(100vh-2rem)]
+          bg-black/90 md:bg-black/65 backdrop-blur-sm border-l border-white/[0.07]
+          z-30 md:z-10 flex flex-col transition-transform duration-200
+          ${sidebarOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}`}
+      >
         <ThreatFeed />
       </div>
+
+      {/* Mobile sidebar toggle — hidden on desktop */}
+      <button
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        className="fixed bottom-14 right-4 md:hidden z-20 px-3 py-1.5 text-[10px] font-mono tracking-widest bg-black/80 border border-sky-500/40 text-sky-400 rounded-sm backdrop-blur-sm"
+      >
+        {sidebarOpen ? 'CLOSE' : 'INTEL'}
+      </button>
 
       {/* Click-to-inspect panel */}
       {selectedEvent && <EventDetail key={selectedEvent.id} event={selectedEvent} />}
