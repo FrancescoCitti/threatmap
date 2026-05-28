@@ -283,8 +283,39 @@ const MOTIVATION_COLOR: Record<string, string> = {
   hacktivism:  'text-purple-400',
 }
 
+const SEV_COLOR_TEXT: Record<number, string> = {
+  4: 'text-red-500', 3: 'text-orange-400', 2: 'text-yellow-400', 1: 'text-slate-400',
+}
+
 function IntelTab() {
   const filteredEvents = useFilteredEvents()
+  const { setSearchQuery } = useThreatStore()
+
+  // Top source IPs and ASNs
+  const { topIps, topAsns } = useMemo(() => {
+    const ipMap   = new Map<string, { count: number; country: string; maxSev: number }>()
+    const asnMap  = new Map<string, { count: number; maxSev: number }>()
+
+    filteredEvents.forEach(e => {
+      const ip  = e.source.ip
+      const rec = ipMap.get(ip) ?? { count: 0, country: e.source.country_name, maxSev: 0 }
+      rec.count++
+      rec.maxSev = Math.max(rec.maxSev, e.severity)
+      ipMap.set(ip, rec)
+
+      if (e.source.as_org) {
+        const r = asnMap.get(e.source.as_org) ?? { count: 0, maxSev: 0 }
+        r.count++
+        r.maxSev = Math.max(r.maxSev, e.severity)
+        asnMap.set(e.source.as_org, r)
+      }
+    })
+
+    return {
+      topIps:  [...ipMap.entries()].sort((a, b) => b[1].count - a[1].count).slice(0, 10),
+      topAsns: [...asnMap.entries()].sort((a, b) => b[1].count - a[1].count).slice(0, 5),
+    }
+  }, [filteredEvents])
 
   // Build a broad signal set: malware_family + lowercase/hyphenated tags + observed TTPs
   const { activeFamilies, activeTtps } = useMemo(() => {
@@ -329,6 +360,49 @@ function IntelTab() {
           ))}
         </div>
       </div>
+
+      {/* Top attackers */}
+      {topIps.length > 0 && (
+        <div>
+          <div className="text-[8px] font-mono font-bold tracking-widest text-sky-500 mb-2">
+            TOP SOURCE IPs ({topIps.length})
+          </div>
+          <div className="border border-white/[0.07] rounded-sm overflow-hidden">
+            {topIps.map(([ip, { count, country, maxSev }]) => (
+              <button
+                key={ip}
+                onClick={() => setSearchQuery(ip)}
+                className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-white/5 border-b border-white/5 last:border-0 text-left transition-colors group"
+              >
+                <span className={`w-1 h-3 rounded-full shrink-0 ${maxSev === 4 ? 'bg-red-500' : maxSev === 3 ? 'bg-orange-400' : maxSev === 2 ? 'bg-yellow-400' : 'bg-slate-500'}`} />
+                <span className="text-[10px] font-mono text-slate-300 group-hover:text-sky-300 transition-colors flex-1 truncate">{ip}</span>
+                <span className="text-[9px] text-slate-600 truncate max-w-[5rem]">{country}</span>
+                <span className={`text-[9px] font-mono font-bold shrink-0 ${SEV_COLOR_TEXT[maxSev]}`}>{count}×</span>
+              </button>
+            ))}
+          </div>
+          {topAsns.length > 0 && (
+            <div className="mt-2">
+              <div className="text-[8px] font-mono font-bold tracking-widest text-sky-500 mb-1.5">
+                TOP ASNs
+              </div>
+              <div className="border border-white/[0.07] rounded-sm overflow-hidden">
+                {topAsns.map(([org, { count, maxSev }]) => (
+                  <button
+                    key={org}
+                    onClick={() => setSearchQuery(org)}
+                    className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-white/5 border-b border-white/5 last:border-0 text-left transition-colors group"
+                  >
+                    <span className={`w-1 h-3 rounded-full shrink-0 ${maxSev === 4 ? 'bg-red-500' : maxSev === 3 ? 'bg-orange-400' : maxSev === 2 ? 'bg-yellow-400' : 'bg-slate-500'}`} />
+                    <span className="text-[10px] font-mono text-slate-400 group-hover:text-sky-300 transition-colors flex-1 truncate">{org}</span>
+                    <span className={`text-[9px] font-mono font-bold shrink-0 ${SEV_COLOR_TEXT[maxSev]}`}>{count}×</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Threat actor attribution */}
       <div>

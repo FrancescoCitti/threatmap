@@ -128,7 +128,7 @@ export function ThreatGlobe() {
     try { localStorage.setItem('globe-intensity', String(intensity)) } catch {}
   }, [intensity])
 
-  const { selectedEvent, setSelected } = useThreatStore()
+  const { selectedEvent, setSelected, setSearchQuery } = useThreatStore()
   const events        = useFilteredEvents()
   const darkGlobeTexture = useMemo(() => makeDarkGlobeTexture(), [])
 
@@ -136,6 +136,18 @@ export function ThreatGlobe() {
   useEffect(() => {
     if (viewMode !== 'arcs' || !selectedEvent) setArcFocusEvent(null)
   }, [viewMode, selectedEvent])
+
+  // Keyboard shortcuts for globe mode (E / A / H / C)
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      const map: Partial<Record<string, ViewMode>> = { e: 'events', a: 'arcs', h: 'heat', c: 'clusters' }
+      const mode = map[e.key.toLowerCase()]
+      if (mode) setViewMode(mode)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   // Load vector country polygons
   useEffect(() => {
@@ -341,6 +353,15 @@ export function ThreatGlobe() {
     [setSelected, viewMode]
   )
 
+  const handlePolygonClick = useCallback(
+    (feat: object) => {
+      const alpha2 = ISO_NUM_TO_A2[(feat as GeoFeature).id as number]
+      if (!alpha2) return
+      const match = events.find(e => e.source.country_code === alpha2)
+      setSearchQuery(match?.source.country_name ?? alpha2)
+    },
+    [events, setSearchQuery]
+  )
 
   // ── Render ────────────────────────────────────────────────────────────────────
 
@@ -348,11 +369,11 @@ export function ThreatGlobe() {
   const atmoAlt     = 0.15 * Math.min(intensity, 1.4)
   const ptAlt       = 0.02 * Math.min(intensity, 1.5)
 
-  const VIEW_MODES: Array<{ id: ViewMode; label: string }> = [
-    { id: 'events',   label: 'EVENTS'  },
-    { id: 'arcs',     label: 'ARCS'    },
-    { id: 'heat',     label: 'HEAT'    },
-    { id: 'clusters', label: 'CLUST'   },
+  const VIEW_MODES: Array<{ id: ViewMode; label: string; key: string }> = [
+    { id: 'events',   label: 'EVENTS', key: 'E' },
+    { id: 'arcs',     label: 'ARCS',   key: 'A' },
+    { id: 'heat',     label: 'HEAT',   key: 'H' },
+    { id: 'clusters', label: 'CLUST',  key: 'C' },
   ]
 
   return (
@@ -372,6 +393,7 @@ export function ThreatGlobe() {
           polygonSideColor={() => 'rgba(0,0,0,0)'}
           polygonStrokeColor={() => 'rgba(56,189,248,0.4)'}
           polygonAltitude={polygonAltitude}
+          onPolygonClick={handlePolygonClick}
 
           pointsData={viewMode !== 'clusters' ? points : []}
           pointLat="lat"
@@ -408,10 +430,11 @@ export function ThreatGlobe() {
       {/* Layer toggles + intensity slider */}
       <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2">
         <div className="flex gap-1">
-          {VIEW_MODES.map(({ id, label }) => (
+          {VIEW_MODES.map(({ id, label, key }) => (
             <button
               key={id}
               onClick={() => setViewMode(id)}
+              title={`[${key}] ${label}`}
               className={`px-3 py-1 text-[10px] font-mono tracking-widest border rounded-sm transition-all ${
                 viewMode === id
                   ? 'bg-sky-500/20 border-sky-500/60 text-sky-400'
@@ -419,6 +442,7 @@ export function ThreatGlobe() {
               }`}
             >
               {label}
+              <span className="ml-1 text-[7px] opacity-40">{key}</span>
             </button>
           ))}
         </div>

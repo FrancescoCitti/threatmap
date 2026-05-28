@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ThreatGlobe } from './components/Globe/Globe'
 import { ThreatFeed } from './components/ThreatFeed/ThreatFeed'
 import { StatusBar } from './components/StatusBar/StatusBar'
@@ -242,9 +242,24 @@ function EventDetail({ event: e }: { event: ThreatEvent }) {
 export default function App() {
   useThreatData()
   useUrlSync()
-  const selectedEvent = useThreatStore(s => s.selectedEvent)
-  const sidebarOpen   = useThreatStore(s => s.sidebarOpen)
+  const selectedEvent  = useThreatStore(s => s.selectedEvent)
+  const sidebarOpen    = useThreatStore(s => s.sidebarOpen)
   const setSidebarOpen = useThreatStore(s => s.setSidebarOpen)
+
+  // Global keyboard shortcuts (skip when typing in an input)
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      const { setSearchQuery, setActiveTab, setTimelineHour } = useThreatStore.getState()
+      if (e.key === 'Escape') { setSearchQuery(''); setTimelineHour(null) }
+      if (e.key === '1') setActiveTab('feed')
+      if (e.key === '2') setActiveTab('intel')
+      if (e.key === '3') setActiveTab('attack')
+      if (e.key === '4') setActiveTab('export')
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   return (
     <div className="relative w-screen h-screen bg-[#070b14] overflow-hidden scanlines">
