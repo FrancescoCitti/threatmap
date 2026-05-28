@@ -252,8 +252,13 @@ def normalize_threatfox(entries: list[dict], geo: dict[str, dict]) -> list[dict]
     return events
 
 
-def normalize_emerging_threats(ips: list[str], geo: dict[str, dict]) -> list[dict]:
-    """Normalize Emerging Threats compromised IP list."""
+def _normalize_ip_list(
+    ips: list[str],
+    geo: dict[str, dict],
+    feed: str,
+    tags: list[str],
+) -> list[dict]:
+    """Generic normalizer for plain IP blocklists (ET, Blocklist.de, CINS…)."""
     now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     events: list[dict] = []
 
@@ -271,12 +276,12 @@ def normalize_emerging_threats(ips: list[str], geo: dict[str, dict]) -> list[dic
             g.get("org") or (as_raw.split(" ", 1)[1] if " " in as_raw else None) or None
         )
 
-        event_id = hashlib.sha256(f"et:{ip}".encode()).hexdigest()[:16]
+        event_id = hashlib.sha256(f"{feed}:{ip}".encode()).hexdigest()[:16]
 
         events.append({
             "id": event_id,
             "ts": now,
-            "feed": "emerging_threats",
+            "feed": feed,
             "type": "scanner",
             "severity": 2,
             "source": {
@@ -289,8 +294,23 @@ def normalize_emerging_threats(ips: list[str], geo: dict[str, dict]) -> list[dic
                 "as_org": as_org,
             },
             "tlp": "WHITE",
-            "tags": ["blocklist", "compromised", "emerging-threats"],
+            "tags": tags,
             "mitre_ttps": ["T1078", "T1190"],
         })
 
     return events
+
+
+def normalize_emerging_threats(ips: list[str], geo: dict[str, dict]) -> list[dict]:
+    return _normalize_ip_list(ips, geo, "emerging_threats",
+                              ["blocklist", "compromised", "emerging-threats"])
+
+
+def normalize_blocklist_de(ips: list[str], geo: dict[str, dict]) -> list[dict]:
+    return _normalize_ip_list(ips, geo, "blocklist_de",
+                              ["blocklist", "attacker", "blocklist-de"])
+
+
+def normalize_cins(ips: list[str], geo: dict[str, dict]) -> list[dict]:
+    return _normalize_ip_list(ips, geo, "cins",
+                              ["blocklist", "attacker", "cins-score"])

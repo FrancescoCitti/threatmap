@@ -17,7 +17,7 @@ export const SourceGeoSchema = z.object({
 export const ThreatEventSchema = z.object({
   id: z.string(),
   ts: z.string(),
-  feed: z.enum(['feodo', 'dshield', 'malwarebazaar', 'threatfox', 'urlhaus', 'emerging_threats']),
+  feed: z.enum(['feodo', 'dshield', 'malwarebazaar', 'threatfox', 'urlhaus', 'emerging_threats', 'blocklist_de', 'cins']),
   type: z.enum(['c2', 'scanner', 'malware_drop', 'ioc', 'botnet']),
   severity: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
   malware_family: z.string().optional(),

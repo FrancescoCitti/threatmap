@@ -15,6 +15,8 @@ from sources.feodo import fetch as fetch_feodo
 from sources.dshield import fetch as fetch_dshield
 from sources.threatfox import fetch as fetch_threatfox
 from sources.emerging_threats import fetch as fetch_emerging_threats
+from sources.blocklist_de import fetch as fetch_blocklist_de
+from sources.cins import fetch as fetch_cins
 from enrichment.geolocate import geolocate_ips
 from enrichment.shodan_idb import enrich_ips as shodan_enrich
 from enrichment.cisa_kev import fetch_cve_set as fetch_kev
@@ -23,6 +25,8 @@ from normalize import (
     normalize_dshield,
     normalize_threatfox,
     normalize_emerging_threats,
+    normalize_blocklist_de,
+    normalize_cins,
 )
 from aggregate import compute_stats
 
@@ -59,23 +63,26 @@ def main() -> None:
     raw_dshield: list[dict] = []
     raw_threatfox: list[dict] = []
     raw_et_ips: list[str] = []
+    raw_bde_ips: list[str] = []
+    raw_cins_ips: list[str] = []
 
-    for name, fn, dest in [
-        ("feodo", fetch_feodo, None),
-        ("dshield", fetch_dshield, None),
-        ("threatfox", fetch_threatfox, None),
-        ("emerging_threats", fetch_emerging_threats, None),
-    ]:
+    fetchers = [
+        ("feodo",            fetch_feodo),
+        ("dshield",          fetch_dshield),
+        ("threatfox",        fetch_threatfox),
+        ("emerging_threats", fetch_emerging_threats),
+        ("blocklist_de",     fetch_blocklist_de),
+        ("cins",             fetch_cins),
+    ]
+    for name, fn in fetchers:
         try:
             result = fn()
-            if name == "feodo":
-                raw_feodo = result
-            elif name == "dshield":
-                raw_dshield = result
-            elif name == "threatfox":
-                raw_threatfox = result
-            elif name == "emerging_threats":
-                raw_et_ips = result
+            if name == "feodo":            raw_feodo = result
+            elif name == "dshield":        raw_dshield = result
+            elif name == "threatfox":      raw_threatfox = result
+            elif name == "emerging_threats": raw_et_ips = result
+            elif name == "blocklist_de":   raw_bde_ips = result
+            elif name == "cins":           raw_cins_ips = result
             print(f"[{name:<18}] fetched {len(result)} items")
         except Exception as exc:
             health["feeds"][name] = {
@@ -90,7 +97,7 @@ def main() -> None:
         ioc.rsplit(":", 1)[0] if ":" in (ioc := e.get("ioc", "")) else ioc
         for e in raw_threatfox
     ]
-    geo_ips = list(dict.fromkeys(ds_ips + tf_ips + raw_et_ips))
+    geo_ips = list(dict.fromkeys(ds_ips + tf_ips + raw_et_ips + raw_bde_ips + raw_cins_ips))
 
     geo: dict[str, dict] = {}
     if geo_ips:
@@ -108,6 +115,8 @@ def main() -> None:
         ("dshield",          normalize_dshield(raw_dshield, geo)),
         ("threatfox",        normalize_threatfox(raw_threatfox, geo)),
         ("emerging_threats", normalize_emerging_threats(raw_et_ips, geo)),
+        ("blocklist_de",     normalize_blocklist_de(raw_bde_ips, geo)),
+        ("cins",             normalize_cins(raw_cins_ips, geo)),
     ]
 
     for feed_name, events in sources_normalized:

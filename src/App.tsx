@@ -41,8 +41,8 @@ function EventDetail({ event: e }: { event: ThreatEvent }) {
   const setSelected = useThreatStore((s) => s.setSelected)
 
   return (
-    <div className="absolute bottom-10 left-4 w-72 bg-black/85 backdrop-blur-sm border border-sky-900/50 rounded-sm font-mono">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-white/10">
+    <div className="absolute bottom-10 left-4 w-72 max-h-[80vh] flex flex-col bg-black/85 backdrop-blur-sm border border-sky-900/50 rounded-sm font-mono">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-white/10 shrink-0">
         <span className="text-[10px] font-bold tracking-widest text-sky-400">
           THREAT DETAIL
         </span>
@@ -63,7 +63,7 @@ function EventDetail({ event: e }: { event: ThreatEvent }) {
         </div>
       )}
 
-      <div className="px-3 py-2 space-y-1.5">
+      <div className="px-3 py-2 space-y-1.5 overflow-y-auto scrollbar-thin flex-1">
         <DetailRow label="IP" value={e.source.ip} />
         <DetailRow label="FEED" value={e.feed.toUpperCase()} />
         <DetailRow label="TYPE" value={e.type.toUpperCase()} />
@@ -84,44 +84,70 @@ function EventDetail({ event: e }: { event: ThreatEvent }) {
           </span>
         </div>
 
-        {e.source.ports && e.source.ports.length > 0 && (
-          <div className="flex gap-2 items-start">
-            <span className="text-slate-600 w-16 shrink-0 text-[10px] pt-0.5">PORTS</span>
-            <div className="flex flex-wrap gap-1">
-              {e.source.ports.map((p) => (
-                <span key={p} className="px-1 py-px bg-slate-900 border border-slate-800 text-slate-400 text-[9px] font-mono rounded">
-                  {p}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {e.source.vulns && e.source.vulns.length > 0 && (
-          <div className="flex gap-2 items-start">
-            <span className="text-slate-600 w-16 shrink-0 text-[10px] pt-0.5">CVEs</span>
-            <div className="flex flex-col gap-0.5">
-              {e.source.vulns.map((cve) => (
-                <span key={cve} className="text-[9px] font-mono text-orange-400">
-                  {cve}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {e.source.shodan_tags && e.source.shodan_tags.length > 0 && (
-          <div className="flex gap-2 items-start">
-            <span className="text-slate-600 w-16 shrink-0 text-[10px] pt-0.5">INFRA</span>
-            <div className="flex flex-wrap gap-1">
-              {e.source.shodan_tags.map((t) => (
-                <span key={t} className="px-1 py-px bg-slate-900 border border-slate-800 text-slate-500 text-[9px] rounded">
-                  {t}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Shodan InternetDB enrichment block */}
+        {(() => {
+          const hasPorts = e.source.ports && e.source.ports.length > 0
+          const hasVulns = e.source.vulns && e.source.vulns.length > 0
+          const hasTags  = e.source.shodan_tags && e.source.shodan_tags.length > 0
+          const hasAny   = hasPorts || hasVulns || hasTags
+          return (
+            <>
+              {hasPorts && (
+                <div className="flex gap-2 items-start">
+                  <span className="text-slate-600 w-16 shrink-0 text-[10px] pt-0.5">PORTS</span>
+                  <div className="flex flex-wrap gap-1">
+                    {e.source.ports!.map((p) => (
+                      <span key={p} className="px-1 py-px bg-slate-900 border border-slate-800 text-slate-400 text-[9px] font-mono rounded">
+                        {p}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {hasVulns && (
+                <div className="flex gap-2 items-start">
+                  <span className="text-slate-600 w-16 shrink-0 text-[10px] pt-0.5">CVEs</span>
+                  <div className="flex flex-col gap-0.5">
+                    {e.source.vulns!.slice(0, 5).map((cve) => (
+                      <a
+                        key={cve}
+                        href={`https://nvd.nist.gov/vuln/detail/${cve}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[9px] font-mono text-orange-400 hover:text-orange-300 underline underline-offset-2 decoration-orange-800 hover:decoration-orange-400 transition-colors"
+                      >
+                        {cve}
+                      </a>
+                    ))}
+                    {e.source.vulns!.length > 5 && (
+                      <span className="text-[9px] text-slate-600 italic">
+                        +{e.source.vulns!.length - 5} more CVEs
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+              {hasTags && (
+                <div className="flex gap-2 items-start">
+                  <span className="text-slate-600 w-16 shrink-0 text-[10px] pt-0.5">INFRA</span>
+                  <div className="flex flex-wrap gap-1">
+                    {e.source.shodan_tags!.map((t) => (
+                      <span key={t} className="px-1 py-px bg-slate-900 border border-slate-800 text-slate-500 text-[9px] rounded">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {!hasAny && (
+                <div className="flex gap-2 items-start">
+                  <span className="text-slate-600 w-16 shrink-0 text-[10px]">SHODAN</span>
+                  <span className="text-[9px] text-slate-700 italic">no data for this IP</span>
+                </div>
+              )}
+            </>
+          )
+        })()}
 
         <DetailRow label="TLP" value={`TLP:${e.tlp}`} />
         {e.mitre_ttps && e.mitre_ttps.length > 0 && (
