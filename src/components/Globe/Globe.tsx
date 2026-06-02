@@ -59,6 +59,26 @@ const ISO_NUM_TO_A2: Record<number, string> = {
   854:'BF', 858:'UY', 860:'UZ', 862:'VE', 882:'WS', 887:'YE', 894:'ZM',
 }
 
+// ── Crimea patch — internationally recognized as Ukrainian territory ──────────
+// The countries-110m.json (Natural Earth) assigns Crimea to Russia (643).
+// We overlay a corrected polygon with id=804 (Ukraine) at a slightly higher
+// altitude so it renders on top and suppresses the Russian coloring there.
+
+const CRIMEA_PATCH: GeoFeature = {
+  type: 'Feature',
+  id: 804,
+  properties: { isUACrimea: true },
+  geometry: {
+    type: 'Polygon',
+    coordinates: [[
+      [32.42, 45.28], [32.50, 45.97], [33.00, 46.10], [33.47, 46.53],
+      [34.23, 46.50], [35.02, 46.32], [36.38, 45.39], [36.65, 45.00],
+      [35.80, 44.81], [35.22, 44.60], [34.10, 44.40], [33.46, 44.40],
+      [32.74, 44.50], [32.48, 44.85], [32.42, 45.28],
+    ]],
+  },
+}
+
 // ── Internet infrastructure hubs (arc destinations) ───────────────────────────
 
 const HUBS = [
@@ -156,7 +176,7 @@ export function ThreatGlobe() {
       .then((topo: Topology) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const fc = feature(topo, (topo.objects as any).countries) as any
-        setCountries(fc.features)
+        setCountries([...fc.features, CRIMEA_PATCH])
       })
       .catch(() => {})
   }, [])
@@ -317,6 +337,7 @@ export function ThreatGlobe() {
 
   const polygonAltitude = useCallback(
     (feat: GeoFeature) => {
+      if (feat.properties?.isUACrimea) return 0.005  // above Russia polygon to prevent z-fighting
       if (viewMode !== 'heat') return 0.003
       const alpha2 = ISO_NUM_TO_A2[feat.id as number]
       const count  = alpha2 ? (countryCounts.get(alpha2) ?? 0) : 0
