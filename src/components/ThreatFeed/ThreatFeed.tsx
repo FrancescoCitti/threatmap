@@ -95,20 +95,22 @@ function FeedRow({ event: e }: { event: ThreatEvent }) {
   return (
     <button
       onClick={() => setSelected(e)}
-      className="w-full text-left px-3 py-2 hover:bg-white/5 border-b border-white/5 transition-colors"
+      className="w-full text-left px-3 py-2 hover:bg-white/[0.03] border-b border-white/[0.04] transition-colors group"
     >
       <div className="flex items-center justify-between gap-2 mb-0.5">
         <div className="flex items-center gap-1.5">
           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${SEV_DOT[e.severity]}`} />
-          <span className={`text-[10px] font-bold tracking-wider ${SEV_COLOR[e.severity]}`}>
+          <span className={`text-[10px] font-bold tracking-wider font-mono ${SEV_COLOR[e.severity]}`}>
             {SEV_LABEL[e.severity]}
           </span>
         </div>
         <span className="text-[10px] text-slate-600 font-mono">{time}</span>
       </div>
       <div className="flex items-center gap-1.5">
-        <span className="text-xs font-semibold text-slate-200 truncate">{e.malware_family ?? e.type}</span>
-        <span className="text-[10px] text-slate-600">·</span>
+        <span className="text-xs font-semibold text-slate-200 truncate group-hover:text-white transition-colors">
+          {e.malware_family ?? e.type}
+        </span>
+        <span className="text-[10px] text-slate-700">·</span>
         <span className="text-[10px] text-slate-500 truncate">{e.source.country_name}</span>
       </div>
       <div className="text-[10px] text-slate-700 font-mono truncate mt-0.5">{e.source.ip}</div>
@@ -148,13 +150,13 @@ function FeedTab() {
   return (
     <div className="flex flex-col h-full">
       {/* Search */}
-      <div className="px-3 py-2 border-b border-white/10 shrink-0">
+      <div className="px-3 py-2 border-b border-white/[0.06] shrink-0">
         <input
           type="text"
           value={searchQuery}
           onChange={ev => setSearchQuery(ev.target.value)}
           placeholder="IP, CVE, malware, actor, severity, TTP…"
-          className="w-full bg-black/50 border border-white/10 rounded-sm px-2 py-1.5 text-[11px] font-mono text-slate-300 placeholder:text-slate-700 focus:outline-none focus:border-sky-500/50 transition-colors"
+          className="w-full bg-black/40 border border-white/[0.08] px-2 py-1.5 text-[11px] font-mono text-slate-300 placeholder:text-slate-700 focus:outline-none focus:border-[#76b900]/50 transition-colors"
         />
 
         {/* Severity quick-filter chips */}
@@ -163,14 +165,14 @@ function FeedTab() {
             { label: 'CRIT', value: 'critical', on: 'bg-red-950/60 border-red-600 text-red-400',   off: 'border-white/10 text-slate-700 hover:text-red-500 hover:border-red-800' },
             { label: 'HIGH', value: 'high',     on: 'bg-orange-950/60 border-orange-600 text-orange-400', off: 'border-white/10 text-slate-700 hover:text-orange-500 hover:border-orange-800' },
             { label: 'MED',  value: 'medium',   on: 'bg-yellow-950/60 border-yellow-600 text-yellow-400', off: 'border-white/10 text-slate-700 hover:text-yellow-500 hover:border-yellow-800' },
-            { label: 'LOW',  value: 'low',      on: 'bg-slate-900 border-slate-600 text-slate-300',       off: 'border-white/10 text-slate-700 hover:text-slate-400 hover:border-slate-600' },
+            { label: 'LOW',  value: 'low',      on: 'bg-[#1a1a1a] border-slate-600 text-slate-300',       off: 'border-white/10 text-slate-700 hover:text-slate-400 hover:border-slate-600' },
           ] as const).map(({ label, value, on, off }) => {
             const active = searchQuery.trim().toLowerCase() === value
             return (
               <button
                 key={value}
                 onClick={() => setSearchQuery(active ? '' : value)}
-                className={`flex-1 py-0.5 text-[8px] font-mono tracking-wider rounded-sm border transition-all ${active ? on : off}`}
+                className={`flex-1 py-0.5 text-[8px] font-mono tracking-wider border transition-all ${active ? on : off}`}
               >
                 {label}
               </button>
@@ -185,7 +187,7 @@ function FeedTab() {
             </span>
             <button
               onClick={() => { setSearchQuery(''); setTimelineHour(null) }}
-              className="text-[9px] text-sky-600 hover:text-sky-400 font-mono transition-colors"
+              className="text-[9px] text-[#76b900]/60 hover:text-[#76b900] font-mono transition-colors"
             >
               clear
             </button>
@@ -195,9 +197,9 @@ function FeedTab() {
 
       {/* 24h mini-timeline */}
       {hourBuckets.length > 0 && (
-        <div className="px-3 pt-2 pb-1.5 border-b border-white/5 shrink-0">
-          <div className="text-[8px] text-slate-700 font-mono mb-1.5 tracking-widest">
-            24H ACTIVITY
+        <div className="px-3 pt-2 pb-1.5 border-b border-white/[0.04] shrink-0">
+          <div className="text-[8px] text-slate-600 font-mono mb-1.5 tracking-[0.2em] uppercase">
+            24H Activity
           </div>
           <div className="flex items-end gap-px h-7">
             {hourBuckets.map(([hour, count]) => {
@@ -208,8 +210,8 @@ function FeedTab() {
                   key={hour}
                   title={`${hour.replace('T', ' ')}:00 UTC — ${count} events`}
                   onClick={() => setTimelineHour(active ? null : hour)}
-                  className={`flex-1 rounded-sm transition-all ${
-                    active ? 'bg-sky-400' : 'bg-sky-900/60 hover:bg-sky-700/70'
+                  className={`flex-1 transition-all ${
+                    active ? 'bg-[#76b900]' : 'bg-[#76b900]/20 hover:bg-[#76b900]/40'
                   }`}
                   style={{ height: `${Math.max(pct * 28, 2)}px` }}
                 />
@@ -289,11 +291,21 @@ const SEV_COLOR_TEXT: Record<number, string> = {
   4: 'text-red-500', 3: 'text-orange-400', 2: 'text-yellow-400', 1: 'text-slate-400',
 }
 
+function SectionHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-2 mb-2">
+      <div className="w-0.5 h-3 bg-[#76b900] shrink-0" />
+      <div className="text-[9px] font-bold tracking-[0.2em] text-[#76b900] uppercase">
+        {children}
+      </div>
+    </div>
+  )
+}
+
 function IntelTab() {
   const filteredEvents = useFilteredEvents()
   const { setSearchQuery } = useThreatStore()
 
-  // Top source IPs and ASNs
   const { topIps, topAsns } = useMemo(() => {
     const ipMap   = new Map<string, { count: number; country: string; maxSev: number }>()
     const asnMap  = new Map<string, { count: number; maxSev: number }>()
@@ -319,13 +331,11 @@ function IntelTab() {
     }
   }, [filteredEvents])
 
-  // Build a broad signal set: malware_family + lowercase/hyphenated tags + observed TTPs
   const { activeFamilies, activeTtps } = useMemo(() => {
     const families = new Set<string>()
     const ttps = new Set<string>()
     filteredEvents.forEach(e => {
       if (e.malware_family) families.add(e.malware_family)
-      // Tags like "qakbot", "cobalt-strike" written by the pipeline
       e.tags.forEach(t => families.add(t))
       e.mitre_ttps?.forEach(t => ttps.add(t))
     })
@@ -334,14 +344,11 @@ function IntelTab() {
 
   const activeActors = useMemo(() => {
     return THREAT_ACTOR_DB.filter(actor => {
-      // Primary: malware_family exact match
       if (actor.malware.some(m => activeFamilies.has(m))) return true
-      // Secondary: normalised tag match (lowercase, hyphenated)
       if (actor.malware.some(m => {
         const norm = m.toLowerCase().replace(/\s+/g, '-')
         return activeFamilies.has(norm) || activeFamilies.has(m.toLowerCase())
       })) return true
-      // Tertiary: TTP overlap — require ≥2 shared TTPs to avoid noise
       const overlap = actor.ttps.filter(t => activeTtps.has(t)).length
       return overlap >= 2
     })
@@ -350,13 +357,13 @@ function IntelTab() {
   const sitrep = useMemo(() => generateSitrep(filteredEvents), [filteredEvents])
 
   return (
-    <div className="flex-1 overflow-y-auto scrollbar-thin p-3 space-y-4">
+    <div className="flex-1 overflow-y-auto scrollbar-thin p-3 space-y-5">
       {/* Sitrep */}
       <div>
-        <div className="text-[8px] font-mono font-bold tracking-widest text-sky-500 mb-2">
-          SITUATION REPORT · {new Date().toUTCString().slice(5, 22)} UTC
-        </div>
-        <div className="border border-white/[0.07] rounded-sm p-2.5 bg-black/30 space-y-1.5">
+        <SectionHeader>
+          Situation Report · {new Date().toUTCString().slice(5, 22)} UTC
+        </SectionHeader>
+        <div className="border border-white/[0.06] p-2.5 bg-black/20 space-y-1.5">
           {sitrep.map((line, i) => (
             <p key={i} className="text-[10px] text-slate-400 leading-relaxed font-mono">{line}</p>
           ))}
@@ -366,37 +373,33 @@ function IntelTab() {
       {/* Top attackers */}
       {topIps.length > 0 && (
         <div>
-          <div className="text-[8px] font-mono font-bold tracking-widest text-sky-500 mb-2">
-            TOP SOURCE IPs ({topIps.length})
-          </div>
-          <div className="border border-white/[0.07] rounded-sm overflow-hidden">
+          <SectionHeader>Top Source IPs ({topIps.length})</SectionHeader>
+          <div className="border border-white/[0.06] overflow-hidden">
             {topIps.map(([ip, { count, country, maxSev }]) => (
               <button
                 key={ip}
                 onClick={() => setSearchQuery(ip)}
-                className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-white/5 border-b border-white/5 last:border-0 text-left transition-colors group"
+                className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-white/[0.03] border-b border-white/[0.04] last:border-0 text-left transition-colors group"
               >
-                <span className={`w-1 h-3 rounded-full shrink-0 ${maxSev === 4 ? 'bg-red-500' : maxSev === 3 ? 'bg-orange-400' : maxSev === 2 ? 'bg-yellow-400' : 'bg-slate-500'}`} />
-                <span className="text-[10px] font-mono text-slate-300 group-hover:text-sky-300 transition-colors flex-1 truncate">{ip}</span>
+                <span className={`w-1 h-3 shrink-0 ${maxSev === 4 ? 'bg-red-500' : maxSev === 3 ? 'bg-orange-400' : maxSev === 2 ? 'bg-yellow-400' : 'bg-slate-500'}`} />
+                <span className="text-[10px] font-mono text-slate-300 group-hover:text-[#8fd400] transition-colors flex-1 truncate">{ip}</span>
                 <span className="text-[9px] text-slate-600 truncate max-w-[5rem]">{country}</span>
                 <span className={`text-[9px] font-mono font-bold shrink-0 ${SEV_COLOR_TEXT[maxSev]}`}>{count}×</span>
               </button>
             ))}
           </div>
           {topAsns.length > 0 && (
-            <div className="mt-2">
-              <div className="text-[8px] font-mono font-bold tracking-widest text-sky-500 mb-1.5">
-                TOP ASNs
-              </div>
-              <div className="border border-white/[0.07] rounded-sm overflow-hidden">
+            <div className="mt-3">
+              <SectionHeader>Top ASNs</SectionHeader>
+              <div className="border border-white/[0.06] overflow-hidden">
                 {topAsns.map(([org, { count, maxSev }]) => (
                   <button
                     key={org}
                     onClick={() => setSearchQuery(org)}
-                    className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-white/5 border-b border-white/5 last:border-0 text-left transition-colors group"
+                    className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-white/[0.03] border-b border-white/[0.04] last:border-0 text-left transition-colors group"
                   >
-                    <span className={`w-1 h-3 rounded-full shrink-0 ${maxSev === 4 ? 'bg-red-500' : maxSev === 3 ? 'bg-orange-400' : maxSev === 2 ? 'bg-yellow-400' : 'bg-slate-500'}`} />
-                    <span className="text-[10px] font-mono text-slate-400 group-hover:text-sky-300 transition-colors flex-1 truncate">{org}</span>
+                    <span className={`w-1 h-3 shrink-0 ${maxSev === 4 ? 'bg-red-500' : maxSev === 3 ? 'bg-orange-400' : maxSev === 2 ? 'bg-yellow-400' : 'bg-slate-500'}`} />
+                    <span className="text-[10px] font-mono text-slate-400 group-hover:text-[#8fd400] transition-colors flex-1 truncate">{org}</span>
                     <span className={`text-[9px] font-mono font-bold shrink-0 ${SEV_COLOR_TEXT[maxSev]}`}>{count}×</span>
                   </button>
                 ))}
@@ -408,9 +411,9 @@ function IntelTab() {
 
       {/* Threat actor attribution */}
       <div>
-        <div className="text-[8px] font-mono font-bold tracking-widest text-sky-500 mb-2">
-          ATTRIBUTED ADVERSARIES{activeActors.length > 0 ? ` (${activeActors.length})` : ''}
-        </div>
+        <SectionHeader>
+          Attributed Adversaries{activeActors.length > 0 ? ` (${activeActors.length})` : ''}
+        </SectionHeader>
         {activeActors.length === 0 ? (
           <p className="text-[10px] text-slate-700 font-mono italic">
             No attributed actors in current dataset.
@@ -418,7 +421,7 @@ function IntelTab() {
         ) : (
           <div className="space-y-2">
             {activeActors.map(actor => (
-              <div key={actor.id} className="border border-white/[0.07] rounded-sm p-2.5 bg-black/20">
+              <div key={actor.id} className="border border-white/[0.06] p-2.5 bg-black/20">
                 <div className="flex items-start justify-between gap-2 mb-1.5">
                   <div>
                     <a
@@ -449,10 +452,10 @@ function IntelTab() {
                       href={malpediaMalwareUrl(m)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`px-1 py-px text-[8px] font-mono rounded border transition-colors ${
+                      className={`px-1 py-px text-[8px] font-mono border transition-colors ${
                         activeFamilies.has(m)
                           ? 'bg-orange-950/60 border-orange-700/50 text-orange-400 hover:text-orange-300'
-                          : 'bg-slate-900/60 border-slate-800 text-slate-600 hover:text-slate-400'
+                          : 'bg-[#1a1a1a] border-white/[0.06] text-slate-600 hover:text-slate-400'
                       }`}
                     >
                       {m}
@@ -513,13 +516,16 @@ function AttackTab() {
 
   return (
     <div className="flex-1 overflow-y-auto scrollbar-thin p-3">
-      <div className="text-[8px] font-mono font-bold tracking-widest text-sky-500 mb-3">
-        OBSERVED TECHNIQUES ({observed.size}) — click to filter feed
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-0.5 h-3 bg-[#76b900] shrink-0" />
+        <div className="text-[9px] font-bold tracking-[0.2em] text-[#76b900] uppercase">
+          Observed Techniques ({observed.size}) — click to filter
+        </div>
       </div>
       <div className="space-y-3">
         {TACTIC_ORDER.filter(t => grouped.has(t)).map(tactic => (
           <div key={tactic}>
-            <div className="text-[8px] font-mono text-slate-600 tracking-widest mb-1 uppercase border-b border-white/5 pb-0.5">
+            <div className="text-[8px] font-mono text-slate-600 tracking-[0.15em] mb-1 uppercase border-b border-white/[0.04] pb-0.5">
               {tactic}
             </div>
             <div className="space-y-px">
@@ -529,9 +535,9 @@ function AttackTab() {
                   <button
                     key={tech.id}
                     onClick={() => { setSearchQuery(tech.id); setActiveTab('feed') }}
-                    className="w-full flex items-center gap-2 px-1.5 py-1 rounded-sm hover:bg-white/5 text-left group transition-colors"
+                    className="w-full flex items-center gap-2 px-1.5 py-1 hover:bg-white/[0.03] text-left group transition-colors"
                   >
-                    <span className="text-[9px] font-mono text-sky-700 group-hover:text-sky-400 w-14 shrink-0 transition-colors">
+                    <span className="text-[9px] font-mono text-[#76b900]/50 group-hover:text-[#76b900] w-14 shrink-0 transition-colors">
                       {tech.id}
                     </span>
                     <span className="text-[10px] text-slate-500 group-hover:text-slate-200 flex-1 truncate transition-colors">
@@ -557,8 +563,9 @@ function ExportTab() {
   return (
     <div className="flex-1 overflow-y-auto scrollbar-thin p-4 space-y-5">
       <div>
-        <div className="text-[8px] font-mono font-bold tracking-widest text-sky-500 mb-3">
-          IOC EXPORT
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-0.5 h-3 bg-[#76b900] shrink-0" />
+          <div className="text-[9px] font-bold tracking-[0.2em] text-[#76b900] uppercase">IOC Export</div>
         </div>
         <p className="text-[10px] text-slate-500 font-mono leading-relaxed mb-4">
           {filteredEvents.length} indicator{filteredEvents.length !== 1 ? 's' : ''}
@@ -568,29 +575,29 @@ function ExportTab() {
           <button
             onClick={() => exportCsv(filteredEvents)}
             disabled={filteredEvents.length === 0}
-            className="w-full flex items-center justify-between px-3 py-2.5 border border-white/10 rounded-sm hover:border-sky-500/40 hover:bg-sky-950/20 disabled:opacity-30 disabled:pointer-events-none transition-all group"
+            className="w-full flex items-center justify-between px-3 py-2.5 border border-white/[0.08] hover:border-[#76b900]/40 hover:bg-[#76b900]/5 disabled:opacity-30 disabled:pointer-events-none transition-all group"
           >
             <div className="text-left">
-              <div className="text-[11px] font-mono font-semibold text-slate-200 group-hover:text-sky-300 transition-colors">
+              <div className="text-[11px] font-semibold text-slate-200 group-hover:text-white transition-colors">
                 CSV Export
               </div>
-              <div className="text-[9px] text-slate-600 mt-0.5">
+              <div className="text-[9px] text-slate-600 mt-0.5 font-mono">
                 ip · type · malware · country · severity · CVEs · TTPs
               </div>
             </div>
-            <span className="text-[10px] font-mono text-slate-600 group-hover:text-sky-400 transition-colors">.csv</span>
+            <span className="text-[10px] font-mono text-slate-600 group-hover:text-[#76b900] transition-colors">.csv</span>
           </button>
 
           <button
             onClick={() => exportStix(filteredEvents)}
             disabled={filteredEvents.length === 0}
-            className="w-full flex items-center justify-between px-3 py-2.5 border border-white/10 rounded-sm hover:border-purple-500/40 hover:bg-purple-950/20 disabled:opacity-30 disabled:pointer-events-none transition-all group"
+            className="w-full flex items-center justify-between px-3 py-2.5 border border-white/[0.08] hover:border-purple-500/40 hover:bg-purple-950/20 disabled:opacity-30 disabled:pointer-events-none transition-all group"
           >
             <div className="text-left">
-              <div className="text-[11px] font-mono font-semibold text-slate-200 group-hover:text-purple-300 transition-colors">
+              <div className="text-[11px] font-semibold text-slate-200 group-hover:text-purple-300 transition-colors">
                 STIX 2.1 Bundle
               </div>
-              <div className="text-[9px] text-slate-600 mt-0.5">
+              <div className="text-[9px] text-slate-600 mt-0.5 font-mono">
                 Structured Threat Information eXpression
               </div>
             </div>
@@ -600,8 +607,9 @@ function ExportTab() {
       </div>
 
       <div>
-        <div className="text-[8px] font-mono font-bold tracking-widest text-sky-500 mb-2">
-          DATA SOURCES
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-0.5 h-3 bg-[#76b900] shrink-0" />
+          <div className="text-[9px] font-bold tracking-[0.2em] text-[#76b900] uppercase">Data Sources</div>
         </div>
         <div className="space-y-1 text-[9px] font-mono text-slate-700 leading-relaxed">
           {[
@@ -619,8 +627,9 @@ function ExportTab() {
       </div>
 
       <div>
-        <div className="text-[8px] font-mono font-bold tracking-widest text-sky-500 mb-1.5">
-          USAGE TERMS
+        <div className="flex items-center gap-2 mb-1.5">
+          <div className="w-0.5 h-3 bg-[#76b900] shrink-0" />
+          <div className="text-[9px] font-bold tracking-[0.2em] text-[#76b900] uppercase">Usage Terms</div>
         </div>
         <p className="text-[9px] text-slate-700 font-mono leading-relaxed">
           TLP:WHITE — May be distributed freely. Attribution appreciated.
@@ -634,10 +643,10 @@ function ExportTab() {
 // ── Tab bar definition ────────────────────────────────────────────────────────
 
 const TABS: Array<{ id: SidebarTab; label: string }> = [
-  { id: 'feed',   label: 'FEED'   },
-  { id: 'intel',  label: 'INTEL'  },
+  { id: 'feed',   label: 'Feed'   },
+  { id: 'intel',  label: 'Intel'  },
   { id: 'attack', label: 'ATT&CK' },
-  { id: 'export', label: 'EXPORT' },
+  { id: 'export', label: 'Export' },
 ]
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -648,15 +657,17 @@ export function ThreatFeed() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-white/10 shrink-0">
-        <span className="text-[10px] font-bold tracking-widest text-sky-400 uppercase">
-          Intel
-        </span>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[#76b900]/15 shrink-0">
+        <div className="flex items-center gap-2.5">
+          <div className="w-0.5 h-4 bg-[#76b900]" />
+          <span className="text-[11px] font-bold tracking-[0.15em] text-white uppercase">
+            Intelligence
+          </span>
+        </div>
         <div className="flex items-center gap-3">
           {!loading && (
-            <span className="text-[10px] text-slate-600">{events.length} events</span>
+            <span className="text-[10px] text-slate-600 font-mono">{events.length} events</span>
           )}
-          {/* Close button — mobile only */}
           <button
             onClick={() => setSidebarOpen(false)}
             className="md:hidden text-slate-600 hover:text-slate-300 text-xs leading-none transition-colors"
@@ -667,14 +678,14 @@ export function ThreatFeed() {
       </div>
 
       {/* Tab bar */}
-      <div className="flex border-b border-white/10 shrink-0">
+      <div className="flex border-b border-[#76b900]/10 shrink-0">
         {TABS.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex-1 py-1.5 text-[9px] font-mono tracking-widest transition-colors border-b-2 ${
+            className={`flex-1 py-2 text-[10px] font-medium tracking-wide transition-colors border-b-2 ${
               activeTab === tab.id
-                ? 'text-sky-400 border-sky-500'
+                ? 'text-[#76b900] border-[#76b900]'
                 : 'text-slate-600 hover:text-slate-400 border-transparent'
             }`}
           >

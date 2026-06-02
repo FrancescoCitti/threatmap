@@ -12,38 +12,30 @@ html, body, #root {
   margin: 0;
   padding: 0;
   overflow: hidden;
-  background: #070b14;
-  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  background: #0a0a0a;
+  font-family: 'Inter', system-ui, sans-serif;
 }
 
-/* Thin scrollbar for sidebar */
+/* Thin scrollbar */
 .scrollbar-thin::-webkit-scrollbar {
-  width: 3px;
+  width: 2px;
 }
 .scrollbar-thin::-webkit-scrollbar-track {
   background: transparent;
 }
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 2px;
+  background: rgba(118, 185, 0, 0.2);
+  border-radius: 1px;
 }
 .scrollbar-thin {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.1) transparent;
+  scrollbar-color: rgba(118,185,0,0.15) transparent;
 }
 
-/* Scanline overlay for CRT effect */
-.scanlines::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0, 0, 0, 0.03) 2px,
-    rgba(0, 0, 0, 0.03) 4px
-  );
-  pointer-events: none;
-  z-index: 1;
+/* Nvidia green glow utility */
+.glow-green {
+  box-shadow: 0 0 12px rgba(118, 185, 0, 0.15), 0 0 1px rgba(118, 185, 0, 0.4);
+}
+.glow-green-sm {
+  box-shadow: 0 0 6px rgba(118, 185, 0, 0.1), 0 0 1px rgba(118, 185, 0, 0.3);
 }

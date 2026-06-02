@@ -53,8 +53,8 @@ function UpdateButton() {
   }
 
   const btnClass = {
-    idle:    'border-white/10 text-slate-600 hover:text-sky-400 hover:border-sky-500/40',
-    running: 'border-sky-500/40 text-sky-400 animate-pulse cursor-not-allowed',
+    idle:    'border-white/10 text-slate-600 hover:text-[#76b900] hover:border-[#76b900]/40',
+    running: 'border-[#76b900]/40 text-[#76b900] animate-pulse cursor-not-allowed',
     ok:      'border-green-500/40 text-green-400',
     error:   'border-red-500/40 text-red-400',
   }[status]
@@ -70,8 +70,8 @@ function UpdateButton() {
     <>
       {showModal && createPortal(
         <div className="fixed inset-0 z-[200] pointer-events-none flex items-end justify-end p-4 pb-12">
-          <div className="pointer-events-auto bg-black/95 border border-sky-900/50 rounded-sm p-3 w-64 font-mono shadow-xl">
-            <div className="text-[9px] text-sky-400 font-bold tracking-widest mb-1.5">
+          <div className="pointer-events-auto bg-[#0d0d0d]/98 border border-[#76b900]/25 p-3 w-64 font-mono shadow-xl glow-green-sm">
+            <div className="text-[9px] text-[#76b900] font-bold tracking-widest mb-1.5">
               GITHUB ACCESS TOKEN
             </div>
             <p className="text-[9px] text-slate-600 leading-relaxed mb-2">
@@ -85,18 +85,18 @@ function UpdateButton() {
               onChange={e => setPatDraft(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSave()}
               placeholder="ghp_…"
-              className="w-full bg-black/60 border border-white/10 rounded-sm px-2 py-1.5 text-[11px] font-mono text-slate-300 placeholder:text-slate-700 focus:outline-none focus:border-sky-500/50 mb-2 transition-colors"
+              className="w-full bg-black/60 border border-white/10 px-2 py-1.5 text-[11px] font-mono text-slate-300 placeholder:text-slate-700 focus:outline-none focus:border-[#76b900]/50 mb-2 transition-colors"
             />
             <div className="flex gap-1.5">
               <button
                 onClick={handleSave}
-                className="flex-1 py-1 text-[9px] font-mono bg-sky-500/20 border border-sky-500/50 text-sky-400 rounded-sm hover:bg-sky-500/30 transition-colors"
+                className="flex-1 py-1 text-[9px] font-mono bg-[#76b900]/20 border border-[#76b900]/50 text-[#76b900] hover:bg-[#76b900]/30 transition-colors"
               >
                 SAVE & TRIGGER
               </button>
               <button
                 onClick={() => { setShowModal(false); setPatDraft('') }}
-                className="px-2 py-1 text-[9px] font-mono border border-white/10 text-slate-600 rounded-sm hover:text-slate-400 transition-colors"
+                className="px-2 py-1 text-[9px] font-mono border border-white/10 text-slate-600 hover:text-slate-400 transition-colors"
               >
                 ✕
               </button>
@@ -115,7 +115,7 @@ function UpdateButton() {
       <button
         onClick={handleClick}
         disabled={status === 'running'}
-        className={`shrink-0 px-2 py-px text-[9px] font-mono tracking-widest border rounded-sm transition-all ${btnClass}`}
+        className={`shrink-0 px-2 py-px text-[9px] font-mono tracking-widest border transition-all ${btnClass}`}
       >
         {btnLabel}
       </button>
@@ -140,12 +140,12 @@ export function StatusBar() {
 
   return (
     <div className="flex items-center gap-3 px-4 h-full text-[10px] font-mono text-slate-500 overflow-hidden whitespace-nowrap">
-      <span className="text-sky-500 font-bold tracking-widest shrink-0">THREATMAP</span>
+      <span className="text-[#76b900] font-bold tracking-[0.2em] shrink-0">THREATMAP</span>
 
       <span className="text-white/10">│</span>
 
       <div className="flex items-center gap-1.5 shrink-0">
-        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${loading ? 'bg-yellow-500 animate-pulse' : 'bg-green-500'}`} />
+        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${loading ? 'bg-yellow-500 animate-pulse' : 'bg-[#76b900]'}`} />
         <span>{loading ? 'Refreshing…' : `${total.toLocaleString()} events`}</span>
       </div>
 
@@ -169,7 +169,7 @@ export function StatusBar() {
       {feeds.map(([feed, status]) => (
         <div key={feed} className="flex items-center gap-1 shrink-0">
           <span className={`w-1.5 h-1.5 rounded-full ${
-            status.status === 'ok' ? 'bg-green-500' : status.status === 'error' ? 'bg-red-500' : 'bg-yellow-500'
+            status.status === 'ok' ? 'bg-[#76b900]' : status.status === 'error' ? 'bg-red-500' : 'bg-yellow-500'
           }`} />
           <span>{feed}</span>
           <span className="text-slate-700">({status.count})</span>

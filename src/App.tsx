@@ -32,8 +32,8 @@ function DetailRow({
 }) {
   return (
     <div className="flex gap-2 items-start">
-      <span className="text-slate-600 w-16 shrink-0 text-[10px] pt-px">{label}</span>
-      <span className={`text-xs break-all ${accent ? 'text-orange-400' : 'text-slate-300'}`}>
+      <span className="text-slate-600 w-16 shrink-0 text-[10px] pt-px font-mono uppercase tracking-wider">{label}</span>
+      <span className={`text-xs break-all font-mono ${accent ? 'text-orange-400' : 'text-slate-300'}`}>
         {value}
       </span>
     </div>
@@ -46,24 +46,24 @@ function EventDetail({ event: e }: { event: ThreatEvent }) {
   const [cveExpanded, setCveExpanded] = useState(false)
 
   return (
-    <div className="absolute bottom-10 left-4 w-72 max-h-[80vh] flex flex-col bg-black/85 backdrop-blur-sm border border-sky-900/50 rounded-sm font-mono">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-white/10 shrink-0">
-        <span className="text-[10px] font-bold tracking-widest text-sky-400">
-          THREAT DETAIL
+    <div className="absolute bottom-10 left-4 w-72 max-h-[80vh] flex flex-col bg-[#0d0d0d]/95 backdrop-blur-sm border border-[#76b900]/25 rounded-none glow-green-sm">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-[#76b900]/15 shrink-0">
+        <span className="text-[10px] font-bold tracking-[0.2em] text-[#76b900] uppercase">
+          Threat Detail
         </span>
         <button
           onClick={() => setSelected(null)}
-          className="text-slate-600 hover:text-slate-300 text-xs leading-none"
+          className="text-slate-600 hover:text-slate-300 text-xs leading-none transition-colors"
         >
           ✕
         </button>
       </div>
 
       {e.kev_match && (
-        <div className="mx-3 my-1.5 px-2 py-1 bg-red-950/60 border border-red-700/50 rounded-sm flex items-center gap-1.5">
+        <div className="mx-3 my-1.5 px-2 py-1 bg-red-950/60 border border-red-700/50 flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />
-          <span className="text-[9px] font-bold tracking-widest text-red-400">
-            CISA KEV — ACTIVELY EXPLOITED CVE ON ATTACKER INFRA
+          <span className="text-[9px] font-bold tracking-widest text-red-400 font-mono">
+            CISA KEV — ACTIVELY EXPLOITED
           </span>
         </div>
       )}
@@ -74,12 +74,12 @@ function EventDetail({ event: e }: { event: ThreatEvent }) {
         <DetailRow label="TYPE" value={e.type.toUpperCase()} />
         {e.malware_family && (
           <div className="flex gap-2 items-start">
-            <span className="text-slate-600 w-16 shrink-0 text-[10px] pt-px">MALWARE</span>
+            <span className="text-slate-600 w-16 shrink-0 text-[10px] pt-px font-mono uppercase tracking-wider">MALWARE</span>
             <a
               href={malpediaMalwareUrl(e.malware_family)}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-orange-400 hover:text-orange-300 underline underline-offset-2 decoration-orange-800 hover:decoration-orange-400 transition-colors break-all"
+              className="text-xs font-mono text-orange-400 hover:text-orange-300 underline underline-offset-2 decoration-orange-800 hover:decoration-orange-400 transition-colors break-all"
             >
               {e.malware_family}
             </a>
@@ -90,7 +90,7 @@ function EventDetail({ event: e }: { event: ThreatEvent }) {
           if (!actors.length) return null
           return (
             <div className="flex gap-2 items-start">
-              <span className="text-slate-600 w-16 shrink-0 text-[10px] pt-0.5">ACTOR</span>
+              <span className="text-slate-600 w-16 shrink-0 text-[10px] font-mono uppercase tracking-wider pt-0.5">ACTOR</span>
               <div className="flex flex-col gap-0.5">
                 {actors.map(a => (
                   <div key={a.id} className="flex items-center gap-1.5">
@@ -112,15 +112,15 @@ function EventDetail({ event: e }: { event: ThreatEvent }) {
         <DetailRow label="COUNTRY" value={e.source.country_name} />
         {e.source.asn != null && (
           <div className="flex gap-2 items-start">
-            <span className="text-slate-600 w-16 shrink-0 text-[10px] pt-px">ASN</span>
-            <span className="text-xs text-slate-300">
+            <span className="text-slate-600 w-16 shrink-0 text-[10px] font-mono uppercase tracking-wider pt-px">ASN</span>
+            <span className="text-xs font-mono text-slate-300">
               AS{e.source.asn}
               {e.source.as_org && (
                 <>
                   {' · '}
                   <button
                     onClick={() => setSearchQuery(e.source.as_org!)}
-                    className="text-sky-400 hover:text-sky-300 underline underline-offset-2 decoration-sky-800 hover:decoration-sky-400 transition-colors cursor-pointer"
+                    className="text-[#76b900] hover:text-[#8fd400] underline underline-offset-2 decoration-[#76b900]/30 hover:decoration-[#76b900] transition-colors cursor-pointer"
                     title="Filter by this ASN"
                   >
                     {e.source.as_org}
@@ -131,13 +131,12 @@ function EventDetail({ event: e }: { event: ThreatEvent }) {
           </div>
         )}
         <div className="flex gap-2 items-center">
-          <span className="text-slate-600 w-16 shrink-0 text-[10px]">SEVERITY</span>
-          <span className={`text-xs font-bold ${SEV_COLOR[e.severity]}`}>
+          <span className="text-slate-600 w-16 shrink-0 text-[10px] font-mono uppercase tracking-wider">SEV</span>
+          <span className={`text-xs font-bold font-mono ${SEV_COLOR[e.severity]}`}>
             {SEV_LABEL[e.severity]}
           </span>
         </div>
 
-        {/* Shodan InternetDB enrichment block */}
         {(() => {
           const hasPorts = e.source.ports && e.source.ports.length > 0
           const hasVulns = e.source.vulns && e.source.vulns.length > 0
@@ -147,10 +146,10 @@ function EventDetail({ event: e }: { event: ThreatEvent }) {
             <>
               {hasPorts && (
                 <div className="flex gap-2 items-start">
-                  <span className="text-slate-600 w-16 shrink-0 text-[10px] pt-0.5">PORTS</span>
+                  <span className="text-slate-600 w-16 shrink-0 text-[10px] font-mono uppercase tracking-wider pt-0.5">PORTS</span>
                   <div className="flex flex-wrap gap-1">
                     {e.source.ports!.map((p) => (
-                      <span key={p} className="px-1 py-px bg-slate-900 border border-slate-800 text-slate-400 text-[9px] font-mono rounded">
+                      <span key={p} className="px-1 py-px bg-[#1a1a1a] border border-white/10 text-slate-400 text-[9px] font-mono">
                         {p}
                       </span>
                     ))}
@@ -159,7 +158,7 @@ function EventDetail({ event: e }: { event: ThreatEvent }) {
               )}
               {hasVulns && (
                 <div className="flex gap-2 items-start">
-                  <span className="text-slate-600 w-16 shrink-0 text-[10px] pt-0.5">CVEs</span>
+                  <span className="text-slate-600 w-16 shrink-0 text-[10px] font-mono uppercase tracking-wider pt-0.5">CVEs</span>
                   <div className="flex flex-col gap-0.5">
                     {(cveExpanded ? e.source.vulns! : e.source.vulns!.slice(0, 5)).map((cve) => (
                       <a
@@ -175,7 +174,7 @@ function EventDetail({ event: e }: { event: ThreatEvent }) {
                     {e.source.vulns!.length > 5 && (
                       <button
                         onClick={() => setCveExpanded((v) => !v)}
-                        className="text-[9px] text-sky-600 hover:text-sky-400 transition-colors text-left mt-0.5"
+                        className="text-[9px] font-mono text-[#76b900]/60 hover:text-[#76b900] transition-colors text-left mt-0.5"
                       >
                         {cveExpanded
                           ? '▲ show less'
@@ -187,10 +186,10 @@ function EventDetail({ event: e }: { event: ThreatEvent }) {
               )}
               {hasTags && (
                 <div className="flex gap-2 items-start">
-                  <span className="text-slate-600 w-16 shrink-0 text-[10px] pt-0.5">INFRA</span>
+                  <span className="text-slate-600 w-16 shrink-0 text-[10px] font-mono uppercase tracking-wider pt-0.5">INFRA</span>
                   <div className="flex flex-wrap gap-1">
                     {e.source.shodan_tags!.map((t) => (
-                      <span key={t} className="px-1 py-px bg-slate-900 border border-slate-800 text-slate-500 text-[9px] rounded">
+                      <span key={t} className="px-1 py-px bg-[#1a1a1a] border border-white/10 text-slate-500 text-[9px] font-mono">
                         {t}
                       </span>
                     ))}
@@ -199,8 +198,8 @@ function EventDetail({ event: e }: { event: ThreatEvent }) {
               )}
               {!hasAny && (
                 <div className="flex gap-2 items-start">
-                  <span className="text-slate-600 w-16 shrink-0 text-[10px]">SHODAN</span>
-                  <span className="text-[9px] text-slate-700 italic">no data for this IP</span>
+                  <span className="text-slate-600 w-16 shrink-0 text-[10px] font-mono uppercase tracking-wider">SHODAN</span>
+                  <span className="text-[9px] font-mono text-slate-700 italic">no data for this IP</span>
                 </div>
               )}
             </>
@@ -208,7 +207,7 @@ function EventDetail({ event: e }: { event: ThreatEvent }) {
         })()}
 
         <div className="flex gap-2 items-center">
-          <span className="text-slate-600 w-16 shrink-0 text-[10px]">PIVOT</span>
+          <span className="text-slate-600 w-16 shrink-0 text-[10px] font-mono uppercase tracking-wider">PIVOT</span>
           <div className="flex gap-1">
             {[
               { label: 'VT', href: `https://www.virustotal.com/gui/ip-address/${e.source.ip}` },
@@ -220,7 +219,7 @@ function EventDetail({ event: e }: { event: ThreatEvent }) {
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-1.5 py-0.5 text-[9px] font-mono bg-slate-900 border border-slate-800 text-sky-600 hover:text-sky-400 hover:border-sky-700 rounded transition-colors"
+                className="px-1.5 py-0.5 text-[9px] font-mono bg-[#1a1a1a] border border-white/10 text-[#76b900]/70 hover:text-[#76b900] hover:border-[#76b900]/50 transition-colors"
               >
                 {label}
               </a>
@@ -241,11 +240,11 @@ function EventDetail({ event: e }: { event: ThreatEvent }) {
       </div>
 
       {e.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1 px-3 pb-2 pt-1 border-t border-white/5">
+        <div className="flex flex-wrap gap-1 px-3 pb-2 pt-1 border-t border-[#76b900]/10">
           {e.tags.map((t) => (
             <span
               key={t}
-              className="px-1.5 py-0.5 bg-sky-950/60 text-sky-500 rounded-sm text-[9px] tracking-wide"
+              className="px-1.5 py-0.5 bg-[#76b900]/10 text-[#76b900] text-[9px] font-mono tracking-wide border border-[#76b900]/20"
             >
               {t}
             </span>
@@ -263,7 +262,6 @@ export default function App() {
   const sidebarOpen    = useThreatStore(s => s.sidebarOpen)
   const setSidebarOpen = useThreatStore(s => s.setSidebarOpen)
 
-  // Global keyboard shortcuts (skip when typing in an input)
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
@@ -279,44 +277,47 @@ export default function App() {
   }, [])
 
   return (
-    <div className="relative w-screen h-screen bg-[#070b14] overflow-hidden scanlines">
+    <div className="relative w-screen h-screen bg-[#0a0a0a] overflow-hidden">
       {/* Full-viewport globe */}
       <ThreatGlobe />
 
       {/* Top-left branding */}
-      <div className="absolute top-4 left-4 pointer-events-none select-none z-10">
-        <div className="font-mono leading-tight">
-          <span className="text-sky-400 font-bold text-xl tracking-[0.12em]">threatmap</span>
-          <span className="text-slate-600 text-base mx-1.5">:</span>
-          <span className="text-slate-400 text-sm tracking-wide">Francesco's little globe</span>
-        </div>
-        <div className="text-slate-600 font-mono text-[9px] tracking-[0.15em] mt-1">
-          LIVE · OSINT · GLOBAL CYBER INTELLIGENCE
+      <div className="absolute top-5 left-5 pointer-events-none select-none z-10">
+        <div className="flex items-stretch gap-3">
+          <div className="w-[3px] bg-[#76b900] rounded-full" />
+          <div>
+            <div className="font-black text-[22px] tracking-tight text-white leading-none">
+              THREATMAP
+            </div>
+            <div className="text-[#76b900] text-[10px] font-semibold tracking-[0.3em] mt-1.5 uppercase">
+              Live Global Intelligence
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Mobile backdrop — closes sidebar on tap */}
+      {/* Mobile backdrop */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/60 z-20 md:hidden"
+          className="fixed inset-0 bg-black/70 z-20 md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Right sidebar — overlay on mobile, always-on on desktop */}
+      {/* Right sidebar */}
       <div
         className={`fixed md:absolute top-0 right-0 w-96 h-full md:h-[calc(100vh-2rem)]
-          bg-black/90 md:bg-black/65 backdrop-blur-sm border-l border-white/[0.07]
-          z-30 md:z-10 flex flex-col transition-transform duration-200
+          bg-[#0d0d0d]/95 md:bg-[#0d0d0d]/90 backdrop-blur-sm border-l border-[#76b900]/15
+          z-30 md:z-10 flex flex-col transition-transform duration-200 glow-green-sm
           ${sidebarOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}`}
       >
         <ThreatFeed />
       </div>
 
-      {/* Mobile sidebar toggle — hidden on desktop */}
+      {/* Mobile sidebar toggle */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="fixed bottom-14 right-4 md:hidden z-20 px-3 py-1.5 text-[10px] font-mono tracking-widest bg-black/80 border border-sky-500/40 text-sky-400 rounded-sm backdrop-blur-sm"
+        className="fixed bottom-14 right-4 md:hidden z-20 px-3 py-1.5 text-[10px] font-mono tracking-widest bg-[#0d0d0d]/90 border border-[#76b900]/40 text-[#76b900] backdrop-blur-sm"
       >
         {sidebarOpen ? 'CLOSE' : 'INTEL'}
       </button>
@@ -325,7 +326,7 @@ export default function App() {
       {selectedEvent && <EventDetail key={selectedEvent.id} event={selectedEvent} />}
 
       {/* Bottom status bar */}
-      <div className="absolute bottom-0 left-0 right-0 h-8 bg-black/80 backdrop-blur-sm border-t border-white/[0.07] z-10">
+      <div className="absolute bottom-0 left-0 right-0 h-8 bg-[#0d0d0d]/95 backdrop-blur-sm border-t border-[#76b900]/15 z-10">
         <StatusBar />
       </div>
     </div>
